@@ -6,7 +6,6 @@
 
 #include "parser.h"
 #include "asmout.h"
-#include "hexconvert.h"
 #include "cpu.h"
 #include "ARM_MAC.h"
 

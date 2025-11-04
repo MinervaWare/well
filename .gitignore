@@ -1,4 +1,6 @@
 .DS_Store
 *.o
+src/*.o
+well
 .idea
 Wellang_User_Manual.docx

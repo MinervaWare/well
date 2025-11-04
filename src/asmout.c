@@ -1,7 +1,6 @@
 /*Copyright (c) 2024 Tristan Wellman*/
 
 #include "asmout.h"
-#include "hexconvert.h"
 #include "cpu.h"
 
 #include "ARM_MAC.h"
@@ -53,6 +52,7 @@ char *getCPUMain() {
 		case ALPHA: strcpy(ret, "main"); break; 
 		case ITANIUM_64: strcpy(ret, "main"); break; 
 		case ARMv7: strcpy(ret, "main"); break;
+		case ARMv8: strcpy(ret, "main"); break;
 		case POWERPC: strcpy(ret, "main"); break;
 		case RS6000: strcpy(ret, "main"); break;
 		case SZ_IBM: strcpy(ret, "main"); break;
@@ -79,6 +79,7 @@ char *createFunctionHeader(char *name) {
                                            name, name);
                               break;
 				case ARMv7: break; /*TODO*/
+				case ARMv8: break; /*TODO*/
 				case POWERPC: break; /*TODO*/
 				case RS6000: break; /*TODO*/
 				case SZ_IBM: break; /*TODO*/
@@ -127,6 +128,7 @@ void convertFunctions(AsmOut *out) {
 							stackAllocation = stackAllocateARM_MAC();
 							break;
 				case ARMv7: break; /*TODO*/
+				case ARMv8: break; /*TODO*/
 				/*IBM*/
 				case POWERPC: break; /*TODO*/
 				case RS6000: break; /*TODO*/
@@ -162,6 +164,7 @@ void convertFunctions(AsmOut *out) {
 				case ITANIUM_64: break; /*TODO*/
 				case ARM_MAC: deallocateStack = stackDeallocateARM_MAC();break;
 				case ARMv7: break; /*TODO*/
+				case ARMv8: break; /*TODO*/
 				case POWERPC: break; /*TODO*/
 				case RS6000: break; /*TODO*/
 				case SZ_IBM: break; /*TODO*/
@@ -198,6 +201,7 @@ char *getAsmString(char *name, char *value) {
 		case ARM_MAC: snprintf(buf, sizeof(buf), "wl_str.%s:\n\t.asciz %s\n",
                            name, value);break;
         case ARMv7: break; /*TODO*/
+		case ARMv8: break; /*TODO*/
 		case POWERPC: break; /*TODO*/
 		case RS6000: break; /*TODO*/
 		case SZ_IBM: break; /*TODO*/
@@ -223,7 +227,7 @@ char *getAsmChar(char *name, char *value) {
 }
 
 char *getAsmInt(char *name, char *value) {
-	char *hexValue = uint64ToHex(value);
+	char *hexValue = intToHex(value);
 	char nameBuf[strlen(name)+100];
 	snprintf(nameBuf, sizeof(nameBuf), "wl_int_%s", name);
 	char buf[strlen(nameBuf)+strlen(hexValue)+100];
@@ -236,7 +240,16 @@ char *getAsmInt(char *name, char *value) {
 }
 
 char *getAsmFloat(char *name, char *value) {
-	return " ";
+	char *hexValue = floatToHex(value);
+	char nameBuf[strlen(name)+100];
+	snprintf(nameBuf, sizeof(nameBuf), "wl_int_%s", name);
+	char buf[strlen(nameBuf)+strlen(hexValue)+100];
+	snprintf(buf, sizeof(buf), 
+			"\n\t.global %s\n\t.p2align 2,0x0\n%s:\n\t.long %s\n",
+			nameBuf, nameBuf, hexValue);	
+	char *ret = calloc(strlen(buf)+1, sizeof(char));
+	strcpy(ret, buf);
+	return ret;
 }
 
 void convertVariables(AsmOut *out) {

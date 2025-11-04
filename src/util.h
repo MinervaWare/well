@@ -44,4 +44,38 @@
 		if(line[i]!='\t') line[j++] = line[i];} \
 	line[j]='\0';}while(0)
 
+#define _W_NONE
+#if defined(__GNUC__) || defined(__clang__)
+#	define _W_PRIVATE __attribute__((unused)) static
+#	define _W_NTHROW __attribute__((nothrow))
+#	define _W_HOT __attribute__((hot))
+#	define _W_COLD __attribute__((cold))
+#	define _W_PURE __attribute__((pure))
+#else
+#	define _W_PRIVATE static
+#	define _W_NTHROW _OE_NONE
+#	define _W_HOT _OE_NONE
+#	define _W_COLD _OE_NONE
+#	define _W_PURE _OE_NONE
+#endif
+
+/*Private util implementations*/
+
+
+_W_PRIVATE _W_HOT char *intToHex(char *value) {
+	int input = atoi(value);
+	char *res = calloc(strlen(value)+1024, sizeof(int));
+	snprintf(res, sizeof(res), "0x%x", input);
+	return res;
+}
+
+_W_PRIVATE _W_HOT char *floatToHex(char *value) {
+	float input = atof(value);
+	uint32_t convVal = 0;
+	memcpy(&convVal, &input, sizeof(float));
+	char *res = calloc(strlen(value)+1024, sizeof(int));
+	snprintf(res, sizeof(res), "0x%x", convVal);
+	return res;
+}
+
 #endif

@@ -1,12 +1,13 @@
 /*Copyright (c) 2024 Tristan Wellman*/
 #ifndef WERROR_H
 #define WERROR_H
+#include "util.h"
 
 struct wErrors {
 	int errorCount;
 	int warnCount;
 };
-static struct wErrors errors;
+_W_PRIVATE struct wErrors errors;
 
 typedef struct {
 	int lineNum;

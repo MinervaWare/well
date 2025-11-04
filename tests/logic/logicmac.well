@@ -3,6 +3,7 @@
 	~string:hello = "- - - Bitwise/Arithmetic logic test - - -\n"
 	~int:a = 1
 	~int:b = 1
+	~int:c = 1987
 
 	; LOGIC INSTRUCTIONS
 	; a = 001 -> 110 = -2
