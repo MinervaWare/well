@@ -163,6 +163,8 @@ void setVariableType(Variable *var, char *type,
 		var->type = FLOAT; return;
 	} else if(!strcmp(type, "void")) {
 		var->type = VOID; return;
+	} else if(!strcmp(type, "zero")) {
+		var->type = ZERO; return;
 	}
 	WLOG_WERROR(WERROR_UNDEFINED_TYPE,
 			file, lineNum, "constants", "");
@@ -203,33 +205,151 @@ void getVariables(struct parserData *parser) {
 				parser->variables[j].value = calloc(strlen(data)+1, sizeof(char));
 				strcpy(parser->variables[j].value, data);
 				/*save data*/
-				/*EATTABS(line);*/
 				char *tmp  = calloc(strlen(line)+1, sizeof(char));
 				strcpy(tmp, line);
 				
 				/*type*/
 				char *type = strstr(line, "~");
-				/*we don't need to check cuz it was already processed*/
 				type++;
 				type = strtok(type, ":");
 				setVariableType(&parser->variables[j], type,
 						parser->scopes[i].lineNum, parser->fData->fileName);
 
-				/*name, once again we don't need to check*/
-				char *name = strstr(tmp, ":");
-				name++;
-				
-				name = strtok(name, "=");
-				while(name[strlen(name)-1]==' ') name[strlen(name)-1] = '\0';
-				parser->variables[j].varName = calloc(strlen(name)+1, sizeof(char));
-				strcpy(parser->variables[j].varName, name);
-				parser->totalVariables++;
-				j = parser->totalVariables;
+				if(parser->variables[j].type!=ZERO) {
+					char *name = strstr(tmp, ":");
+					name++;	
+					name = strtok(name, "=");
+					while(name[strlen(name)-1]==' ') name[strlen(name)-1] = '\0';
+					parser->variables[j].varName = calloc(strlen(name)+1, sizeof(char));
+					strcpy(parser->variables[j].varName, name);
+					parser->totalVariables++;
+					j = parser->totalVariables;
+				} else {
+					/*Different syntax for zero initialized areas*/
+					char *bytes = strstr(tmp, ":");
+					bytes++;
+					bytes = strtok(bytes, ":");
+					while(bytes[strlen(bytes)-1]==' ') bytes[strlen(bytes)-1] = '\0';
+					
+				}
 				free(tmp);
 			}
 		}
 	}
 }
+
+/*
+ *   ~int:abc = 123
+ * */
+char *LVTGetType(char *line) {
+	if(line==NULL) return NULL;
+	char *lcpy = calloc(strlen(line)+1, sizeof(char));
+	strcpy(lcpy, line);
+	char *type = NULL;
+	type = strstr(lcpy, "~");
+	type++;
+	type = strtok(type, ":");
+	while(type[0]==' ') type++;
+	while(type[strlen(type)-1]==' ') type[strlen(type)-1] = '\0';
+	return type;
+}
+
+char *LVTGetValue(char *line) {
+	if(line==NULL) return NULL;
+	char *lcpy = calloc(strlen(line)+1, sizeof(char));
+	strcpy(lcpy, line);
+	char *value = NULL;
+	value = strstr(lcpy, "=");
+	value++;
+	while(value[0]==' ') value++;
+	while(value[strlen(value)-1]==' '||
+			value[strlen(value)-1]=='\n') value[strlen(value)-1] = '\0';
+	return value;
+}
+
+char *LVTGetVName(char *line) {
+	if(line==NULL) return NULL;
+	char *lcpy = calloc(strlen(line)+1, sizeof(char));
+	strcpy(lcpy, line);
+	char *name = NULL;
+	name = strstr(lcpy, ":");
+	name++;
+	name = strtok(name, "=");
+	while(name[0]==' ') name++;
+	while(name[strlen(name)-1]==' ') name[strlen(name)-1] = '\0';
+	return name;
+}
+
+/*This will be changed once bitfields are added*/
+int LVTGetOffsetSize(enum varTypes type) {
+	switch(type) {
+		case INT: return sizeof(int32_t);
+		case CHAR: return sizeof(char);
+		case STRING: return sizeof(char *) /*8*/;
+		case FLOAT: return sizeof(float);
+		case VOID: return sizeof(void);
+		case ZERO: return sizeof(void);
+	};	
+	return 0;
+}
+
+void buildFunctionLVT(Function *func) {
+	static int curOffset = 0;
+	if(func==NULL) return;
+	if(func->lvt==NULL) {
+		func->lvt = calloc(1, sizeof(LVT));
+		func->lvt->offsets = NULL;
+		func->lvt->variables = NULL;
+		func->lvt->totalVariables = 0;
+		func->lvt->cap = DEFALLOCSTEP;
+	}
+	if(func->lvt->variables==NULL&&
+			func->lvt->offsets==NULL) {
+		func->lvt->variables = calloc(DEFALLOCSTEP, sizeof(Variable));	
+		func->lvt->offsets = calloc(DEFALLOCSTEP, sizeof(int));
+	}
+	int i, *j = &func->lvt->totalVariables;
+	for(i=0;i<func->dataLength;i++) {
+		if(func->data[i]==NULL) continue;
+		if(checkImportantType(func->data[i])) {
+			if(getScopeType(func->data[i])==VARIABLE) {
+				if(*j>func->lvt->cap) {
+					func->lvt->cap += DEFALLOCSTEP;
+					func->lvt->variables = (Variable *)realloc(func->lvt->variables,
+							sizeof(Variable)*func->lvt->cap);
+					func->lvt->offsets = (int *)realloc(func->lvt->offsets,
+							sizeof(int)*func->lvt->cap);
+				}
+				char *type = LVTGetType(func->data[i]);
+				char *name = LVTGetVName(func->data[i]);
+				char *value = LVTGetValue(func->data[i]);
+				if(value==NULL) func->lvt->variables[*j].value = NULL;
+				if(type==NULL) {
+					WLOG_WERROR(WERROR_UNDEFINED_TYPE,
+							gPData->fData->fileName, 
+							func->scope.lineNum+i, 
+							func->funName, "Fix your locals buster");
+				}	
+				if(name==NULL) {
+					WLOG_WERROR(WERROR_INVALID_SYNTAX,
+							gPData->fData->fileName, 
+							func->scope.lineNum+i, 
+							func->funName, "Give your local variable a name!");
+				}
+				setVariableType(&func->lvt->variables[*j], type,
+						func->scope.lineNum+i, gPData->fData->fileName);
+				func->lvt->variables[*j].varName = calloc(strlen(name)+1, sizeof(char));
+				strcpy(func->lvt->variables[*j].varName, name);
+				func->lvt->variables[*j].value = calloc(strlen(value)+1, sizeof(char));
+				strcpy(func->lvt->variables[*j].value, value);
+				func->lvt->offsets[*j] = LVTGetOffsetSize(
+						func->lvt->variables[*j].type);
+				*j = *j+1;
+			}
+		}	
+	}
+}
+
 
 /* * * * *
  * Instruction related functions.
@@ -321,7 +441,6 @@ void parseInstruction(char *line, Instruction *ins) {
 	getInstructionArguments(ins);
 }
 
-
 /* * * * *
  * Function related functions
  * * * * */
@@ -399,27 +518,28 @@ void buffToFunc(Function *func, struct parserData *parser) {
 
 void parseFunctionInstructions(Function *func) {
 	int i,j=0;
-	for(i=0;i<func->dataLength;i++,j++) {
-		if(func->data[i]==NULL||
-				checkImportantType(func->data[i])) {
+	for(i=0;i<func->dataLength;i++) {
+		if(func->data[i]==NULL) continue;
+		if(checkImportantType(func->data[i])) {
 			/*Get if or loop statement data and convert*/
-			if(j>0) j--;
 			continue;
+		} else {
+			char *cpy = calloc(strlen(func->data[i])+1, sizeof(char));
+			strcpy(cpy, func->data[i]);
+			/*memset(func->instructions[i], 0, sizeof(Instruction));*/
+			func->instructions[j].line = NULL;
+			func->instructions[j].line = calloc(strlen(func->data[i])+1, sizeof(char));
+			strcpy(func->instructions[j].line, func->data[i]);
+			func->instructions[j].instruction = NULL;
+			func->instructions[j].arguments = NULL;
+			func->instructions[j].errData.lineNum = func->scope.lineNum+j;
+			func->instructions[j].errData.function = calloc(strlen(func->funName)+1, sizeof(char));
+			strcpy(func->instructions[j].errData.function, func->funName);
+			parseInstruction(cpy,
+					&func->instructions[j]);
+			free(cpy);
+			j++;
 		}
-        char *cpy = calloc(strlen(func->data[i])+1, sizeof(char));
-        strcpy(cpy, func->data[i]);
-		/*memset(func->instructions[i], 0, sizeof(Instruction));*/
-		func->instructions[j].line = NULL;
-		func->instructions[j].line = calloc(strlen(func->data[i])+1, sizeof(char));
-		strcpy(func->instructions[j].line, func->data[i]);
-		func->instructions[j].instruction = NULL;
-		func->instructions[j].arguments = NULL;
-		func->instructions[j].errData.lineNum = func->scope.lineNum+j;
-		func->instructions[j].errData.function = calloc(strlen(func->funName)+1, sizeof(char));
-		strcpy(func->instructions[j].errData.function, func->funName);
-		parseInstruction(cpy,
-				&func->instructions[j]);
-		free(cpy);
 	}
 }
 
@@ -471,10 +591,16 @@ void getFunctionData(struct parserData *parser) {
 			strcpy(f.funName, s->scopeName);
 			f.scope = *s;
 
+			f.lvt = calloc(1, sizeof(LVT));
+			f.lvt->offsets = NULL;
+			f.lvt->variables = NULL;
+			f.lvt->totalVariables = 0;
+
 			buffToFunc(&f, parser);
 			getFunctionType(parser, &f);
 
 			f.instructions = calloc(f.dataLength+10, sizeof(Instruction));
+			buildFunctionLVT(&f);
 			parseFunctionInstructions(&f);
 
 			if(verifyFunctionReturn(parser, &f)) appendFuncArr(f, parser);

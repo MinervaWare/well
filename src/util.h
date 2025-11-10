@@ -53,14 +53,13 @@
 #	define _W_PURE __attribute__((pure))
 #else
 #	define _W_PRIVATE static
-#	define _W_NTHROW _OE_NONE
-#	define _W_HOT _OE_NONE
-#	define _W_COLD _OE_NONE
-#	define _W_PURE _OE_NONE
+#	define _W_NTHROW _W_NONE
+#	define _W_HOT _W_NONE
+#	define _W_COLD _W_NONE
+#	define _W_PURE _W_NONE
 #endif
 
 /*Private util implementations*/
-
 
 _W_PRIVATE _W_HOT char *intToHex(char *value) {
 	int input = atoi(value);

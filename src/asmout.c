@@ -36,6 +36,20 @@ int regToEnum(char *reg) {
 	return R1;
 }
 
+/*Instruction output*/
+
+char *dumpInlineASM(Instruction *ins) {
+	if(ins->argLen==0) return NULL;
+	char *out = calloc(strlen(ins->arguments[0])*ins->argLen+1024, sizeof(char));
+	strcpy(out, ins->arguments[0]);
+	int i;
+	for(i=1;i<ins->argLen;i++) {
+		char buf[1024];
+		snprintf(buf, sizeof(buf), ", %s", ins->arguments[i]);
+		strcat(out, buf);
+	}
+	return out;
+}
 
 /* 
  * Funtion output
@@ -252,6 +266,13 @@ char *getAsmFloat(char *name, char *value) {
 	return ret;
 }
 
+char *getAsmZero(char *name, char *value) {
+	int len = strlen(name)+strlen(value)+128;
+	char *ret = calloc(len, sizeof(char));
+	snprintf(ret, len*sizeof(char), "\n.zerofill __DATA,__bss,wl_z_%s,%s,3", name, value);
+	return ret;
+}
+
 void convertVariables(AsmOut *out) {
 	out->buffers.variables = calloc(1, sizeof(char));
 	int totalSize = 1;
@@ -269,6 +290,7 @@ void convertVariables(AsmOut *out) {
 			case STRING: asmVar = getAsmString(curName, curValue);break;
 			case CHAR: asmVar = getAsmChar(curName, curValue);break;
 			case VOID: /*TODO*/break;
+			case ZERO: asmVar = getAsmZero(curName, curValue);
 		};
 		if(asmVar!=NULL) {
 			totalSize += strlen(asmVar);

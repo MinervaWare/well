@@ -11,18 +11,21 @@
 
 MacRegData *macRegData = NULL;
 
-/*These auto to 16 since we don't do local variables yet*/
+/*
+ * Stack initialization is going to be large and unoptimized to local variables/structs.
+ * This is because
+ * */
 char *stackAllocateARM_MAC() {
 	/*auto to 16*/
 	char *ret = calloc(1024, sizeof(char));
-	sprintf(ret, "\tsub sp, sp, #16\n\tstp x29, x30, [sp, #0]\n\tadd x29, sp, #0\n");
+	sprintf(ret, "\tsub sp, sp, #32\n\tstp x29, x30, [sp, #16]\n\tadd x29, sp, #16\n");
 	return ret; 
 }
 
 char *stackDeallocateARM_MAC() {
 	/*auto to 16*/
 	char *ret = calloc(1024, sizeof(char));
-	sprintf(ret, "\tldp x29, x30, [sp, #0]\n\tadd sp, sp, #16\n");
+	sprintf(ret, "\tldp x29, x30, [sp, #16]\n\tadd sp, sp, #32\n");
 	return ret; 
 }
 
@@ -92,7 +95,13 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 	int i;
 
 	for(i=0;i<args;i++) WTRIM(ins.arguments[i]);
+
+	/*Special instructions*/
+	/*Inline - Drops direct asm instructions into the output*/
+	if(!strcmp(ins.instruction, "inline")) 
+		snprintf(outBuf, sizeof(outBuf), "\t%s\n", dumpInlineASM(&ins));
 	
+
 	/*
 	 * 0 argument instructions
 	 * */
@@ -163,13 +172,16 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 				macRegData->prevRegType = getVarRegType(v.type);
 
 				char asmVName[1024];
-				switch(v.type) {
-					case STRING: sprintf(asmVName, "wl_str.%s", ins.arguments[0]);break;
-					case CHAR: sprintf(asmVName, "wl_ch_%s", ins.arguments[0]);break;
-					case INT: sprintf(asmVName, "wl_int_%s", ins.arguments[0]);break;
-					case FLOAT: sprintf(asmVName, "wl_fl_%s", ins.arguments[0]);break;
-					case VOID: /*TODO*/break;
-				};
+				if(v.varName!=NULL) {
+					switch(v.type) {
+						case STRING: sprintf(asmVName, "wl_str.%s", ins.arguments[0]);break;
+						case CHAR: sprintf(asmVName, "wl_ch_%s", ins.arguments[0]);break;
+						case INT: sprintf(asmVName, "wl_int_%s", ins.arguments[0]);break;
+						case FLOAT: sprintf(asmVName, "wl_fl_%s", ins.arguments[0]);break;
+						case VOID: /*TODO*/break;
+						case ZERO: sprintf(asmVName, "wl_z_%s", ins.arguments[0]);break;
+					};
+				} else snprintf(asmVName, sizeof(asmVName), "_%s", ins.arguments[0]);
 				val1 = calloc(strlen(asmVName)+1, sizeof(char));
 				strcpy(val1, asmVName);
 			}
@@ -180,13 +192,16 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 			} else {
 				Variable v = getVarFrom(out->parser, ins.arguments[1]);
 				char asmVName[1024];
-				switch(v.type) {
-					case STRING: sprintf(asmVName, "wl_str.%s", ins.arguments[1]);break;
-					case CHAR: sprintf(asmVName, "wl_ch_%s", ins.arguments[1]);break;
-					case INT: sprintf(asmVName, "wl_int_%s", ins.arguments[1]);break;
-					case FLOAT: sprintf(asmVName, "wl_fl_%s", ins.arguments[1]);break;
-					case VOID: /*TODO*/break;
-				};
+				if(v.varName!=NULL) {
+					switch(v.type) {
+						case STRING: sprintf(asmVName, "wl_str.%s", ins.arguments[1]);break;
+						case CHAR: sprintf(asmVName, "wl_ch_%s", ins.arguments[1]);break;
+						case INT: sprintf(asmVName, "wl_int_%s", ins.arguments[1]);break;
+						case FLOAT: sprintf(asmVName, "wl_fl_%s", ins.arguments[1]);break;
+						case VOID: /*TODO*/break;
+						case ZERO: sprintf(asmVName, "wl_z_%s", ins.arguments[0]);break;
+					};
+				} else snprintf(asmVName, sizeof(asmVName), "_%s", ins.arguments[1]);
 				val2 = calloc(strlen(asmVName)+1, sizeof(char));
 				strcpy(val2, asmVName);
 			}

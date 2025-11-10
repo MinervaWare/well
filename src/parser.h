@@ -36,6 +36,7 @@ enum varTypes {
 	STRING,
 	FLOAT,
 	VOID,
+	ZERO
 };
 
 /*
@@ -48,6 +49,8 @@ enum varTypes {
 #define DEFMAXFSIZE 1024 /*default max amount of lines for a function*/
 
 #define DEFAULTINSARGSIZE 2
+
+#define DEFALLOCSTEP 5
 
 /*Declarations for dynamic scope arrays*/
 typedef struct {
@@ -67,6 +70,18 @@ typedef struct {
 
 typedef struct {
 	enum varTypes type;
+	char *varName;
+	char *value;
+} Variable;
+
+typedef struct {
+	int *offsets;
+	Variable *variables;
+	int totalVariables, cap;
+} LVT; /*Local Variable Table*/
+
+typedef struct {
+	enum varTypes type;
 	char *funName;
 	char **data; /*All the code inside the function scope*/
 	int dataLength;
@@ -74,13 +89,8 @@ typedef struct {
 	Scope scope;
 	/*needs malloced to amount of lines in function*/
 	Instruction *instructions;
+	LVT *lvt;
 } Function;
-
-typedef struct {
-	enum varTypes type;
-	char *varName;
-	char *value;
-} Variable;
 
 struct Directives {
 	int NOMAIN;

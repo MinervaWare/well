@@ -102,6 +102,11 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 
 	for(i=0;i<args;i++) WTRIM(ins.arguments[i]);
 
+	/*Special instructions*/
+	/*Inline - Drops direct asm instructions into the output*/
+	if(!strcmp(ins.instruction, "inline")) 
+		snprintf(outBuf, sizeof(outBuf), "%s", dumpInlineASM(&ins));
+
 	/*
 	 * 1 argument instructions
 	 * */
@@ -154,6 +159,7 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 					case INT: sprintf(asmVName, "wl_int_%s", ins.arguments[0]);break;
 					case FLOAT: sprintf(asmVName, "wl_fl_%s", ins.arguments[0]);break;
 					case VOID: /*TODO*/break;
+					case ZERO: sprintf(asmVName, "wl_z_%s", ins.arguments[0]);break;
 				};
 				val1 = calloc(strlen(asmVName)+128, sizeof(char));
 				strcpy(val1, asmVName);
@@ -171,6 +177,7 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 					case INT: sprintf(asmVName, "wl_int_%s", ins.arguments[1]);break;
 					case FLOAT: sprintf(asmVName, "wl_fl_%s", ins.arguments[1]);break;
 					case VOID: /*TODO*/break;
+					case ZERO: sprintf(asmVName, "wl_z_%s", ins.arguments[0]);break;
 				};
 				val2 = calloc(strlen(asmVName)+128, sizeof(char));
 				strcpy(val2, asmVName);

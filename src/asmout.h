@@ -63,6 +63,7 @@ typedef struct {
 
 int checkRegister(char *reg);
 int regToEnum(char *reg);
+char *dumpInlineASM(Instruction *ins);
 void convertToAsm(AsmOut *out); 
 void freeAsm(AsmOut *out);
 void initAsmOut(struct parserData *parser, AsmOut *output); 
