@@ -21,7 +21,7 @@
 	move~ b, r2
 	call~ switch
 
-	~string:sw = "a: %ld, b: %ld\n"
+	~string:sw = "a: %d, b: %d\n"
 	move~ r2, r3
 	move~ r1, r2
 	move~ sw, r1

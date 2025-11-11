@@ -204,10 +204,12 @@ void convertFunctions(AsmOut *out) {
 					(char *)realloc(out->buffers.functions, bufferSize);
 				if(setAllocation==0) {
 					strcat(out->buffers.functions, stackAllocation);
-					bufferSize += strlen(LVTAlloc);
-					out->buffers.functions =
-						(char *)realloc(out->buffers.functions, bufferSize);
-					strcat(out->buffers.functions, LVTAlloc);
+					if(LVTAlloc!=NULL) {
+						bufferSize += strlen(LVTAlloc);
+						out->buffers.functions =
+							(char *)realloc(out->buffers.functions, bufferSize);
+						strcat(out->buffers.functions, LVTAlloc);
+					}
 					setAllocation=1;
 				}
 				strcat(out->buffers.functions, asmInstruction);

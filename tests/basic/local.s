@@ -47,7 +47,7 @@ wl_str_testLocal:
 	.text
 	.global wl_str_sw
 .rawwl_strsw:
-	.asciz "a: %ld, b: %ld\n"
+	.asciz "a: %d, b: %d\n"
 	.data
 	.align 8
 wl_str_sw:
