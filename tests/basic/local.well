@@ -2,9 +2,6 @@
 
 ; Obviously you can just xor here, this is just to test locals.
 
-~constants {
-	~int:c = a
-}
 
 ~void:switch {
 	~int:tmp = 0
@@ -24,7 +21,7 @@
 	move~ b, r2
 	call~ switch
 
-	~string:sw = "a: %d, b: %d\n"
+	~string:sw = "a: %ld, b: %ld\n"
 	move~ r2, r3
 	move~ r1, r2
 	move~ sw, r1

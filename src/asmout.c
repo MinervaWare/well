@@ -91,7 +91,7 @@ char *createFunctionHeader(char *name) {
 				case ARM_MAC: snprintf(head,bSize,
                                            "\t.section __TEXT,__text\n\t.global _%s\n\t.p2align 2\n_%s:\n",
                                            name, name);
-                              break;
+          break;
 				case ARMv7: break; /*TODO*/
 				case ARMv8: break; /*TODO*/
 				case POWERPC: break; /*TODO*/
@@ -102,6 +102,51 @@ char *createFunctionHeader(char *name) {
 	return head;
 }
 
+/*Init any local variables with provided data values.*/
+char *getLVTAllocation(Function *func) {
+	char *res = NULL;
+	if(func==NULL) return res;
+	int i;
+	for(i=0;i<func->lvt->totalVariables;i++) {
+		if(func->lvt->variables[i].varName!=NULL) {
+			char *vName = func->lvt->variables[i].varName;
+			char *value = func->lvt->variables[i].value;
+			int offset = func->lvt->variables[i].offset;
+			if(value==NULL||vName==NULL) continue;
+			char buf[strlen(vName)+strlen(value)+1024];
+			if(CPU==AMD_X86_64) {
+				switch(func->lvt->variables[i].type) {
+					case INT: snprintf(buf, sizeof(buf),
+									  "\tmovq $%s, -%d(%%rbp)\n",
+									  value, offset);
+							  break;
+					case CHAR: snprintf(buf, sizeof(buf),
+									   "\tmovq $%d, -%d(%%rbp)\n",
+									   (int)value[0], offset);
+							   break;
+					case STRING: snprintf(buf, sizeof(buf),
+										 "\tmovq wl_str_%s(%%rip), %%r10\n"
+										 "\tmovq %%r10, -%d(%%rbp)\n",
+										 vName, offset); 
+							    break;
+					case FLOAT: break;
+					case VOID: break;
+					case ZERO: break;
+				};
+				if(res==NULL) {
+					res = calloc(strlen(buf)+1, sizeof(char));
+					strcpy(res, buf);
+				} else {
+					res = (char *)realloc(res,
+							(strlen(res)+strlen(buf)+1)*sizeof(char));
+					strcat(res, buf);
+				}
+			}
+		}
+	}
+	return res;
+}
+
 void convertFunctions(AsmOut *out) {
 	out->buffers.functions = calloc(1, sizeof(char));
 
@@ -110,6 +155,8 @@ void convertFunctions(AsmOut *out) {
 	for(i=0;i<out->parser->totalFunctions;i++) {
 		char *header = createFunctionHeader(out->parser->functions[i].funName);
 		bufferSize+=strlen(header)+1;
+		char *LVTAlloc = getLVTAllocation(&out->parser->functions[i]);
+
 		out->buffers.functions =
 			realloc(out->buffers.functions, bufferSize);
 		strcat(out->buffers.functions, header);
@@ -157,6 +204,10 @@ void convertFunctions(AsmOut *out) {
 					(char *)realloc(out->buffers.functions, bufferSize);
 				if(setAllocation==0) {
 					strcat(out->buffers.functions, stackAllocation);
+					bufferSize += strlen(LVTAlloc);
+					out->buffers.functions =
+						(char *)realloc(out->buffers.functions, bufferSize);
+					strcat(out->buffers.functions, LVTAlloc);
 					setAllocation=1;
 				}
 				strcat(out->buffers.functions, asmInstruction);
@@ -166,6 +217,7 @@ void convertFunctions(AsmOut *out) {
 			free(stackAllocation);
 			if(asmInstruction!=NULL) free(asmInstruction);
 		}
+		free(LVTAlloc);
 		setAllocation = 0;
 
 		/*Check for void function type so we can return correctly*/
@@ -276,7 +328,7 @@ char *getAsmZero(char *name, char *value) {
 void convertVariables(AsmOut *out) {
 	out->buffers.variables = calloc(1, sizeof(char));
 	int totalSize = 1;
-	int i;
+	int i,j;
 	for(i=0;i<out->parser->totalVariables;i++) {	
 
 		char *curName = calloc(strlen(out->parser->variables[i].varName)+1, sizeof(char));
@@ -300,6 +352,24 @@ void convertVariables(AsmOut *out) {
 		}	
 		free(curName);
 		free(curValue);
+	}
+	/*Local string variables*/
+	struct parserData *parser = out->parser;
+	for(i=0;i<parser->totalFunctions;i++) {
+		Function *f = &parser->functions[i];
+		for(j=0;j<f->lvt->totalVariables;j++) {
+			char *asmVar = NULL;
+			if(f->lvt->variables[j].type==STRING) {
+				asmVar = getAsmString(f->lvt->variables[j].varName,
+						f->lvt->variables[j].value);
+				if(asmVar!=NULL) {
+					totalSize += strlen(asmVar);
+					out->buffers.variables = (char *)realloc(
+							out->buffers.variables, sizeof(char)*(totalSize+2));
+					strcat(out->buffers.variables, asmVar);	
+				}
+			}
+		}
 	}
 }
 

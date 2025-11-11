@@ -66,16 +66,17 @@ typedef struct {
 	int argLen;
 	int capacity;
 	WerrorData errData;
+	int lineNum;
 } Instruction;
 
 typedef struct {
 	enum varTypes type;
 	char *varName;
 	char *value;
+	int offset;
 } Variable;
 
 typedef struct {
-	int *offsets;
 	Variable *variables;
 	int totalVariables, cap;
 } LVT; /*Local Variable Table*/
@@ -130,7 +131,9 @@ struct parserData {
 /**
  * Function Prototypes
  * */
-Variable getVarFrom(struct parserData *parser, char *name);
+Variable *getVarFrom(struct parserData *parser, char *name);
+Variable *queryLocalVariable(struct parserData *parser, 
+		int lineNum, char *var);
 Instruction instructionDup(const Instruction *src);
 
 void parseProgram(struct parserData *parser);

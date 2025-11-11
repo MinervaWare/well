@@ -8,11 +8,11 @@ char *stackAllocateAMD_X86_64() {
 	/*auto to 16*/
 	if(CPU==AMD_X86_64) {
 		char *ret = calloc(1024, sizeof(char));
-		sprintf(ret, "\tpushq %%rbp\n\tmovq %%rsp, %%rbp\n\tsubq $16, %%rsp\n");
+		sprintf(ret, "\tpushq %%rbp\n\tmovq %%rsp, %%rbp\n\tsubq $32, %%rsp\n");
 		return ret;
 	} else if(CPU==I386) {
 		char *ret = calloc(1024, sizeof(char));
-		sprintf(ret, "\tpushl %%ebp\n\tmovl %%esp, %%ebp\n\tsubl $16, %%esp\n");
+		sprintf(ret, "\tpushl %%ebp\n\tmovl %%esp, %%ebp\n\tsubl $32, %%esp\n");
 		return ret;
 	}
 	return NULL;
@@ -22,14 +22,21 @@ char *stackDeallocateAMD_X86_64() {
 	/*auto to 16*/
 	if(CPU==AMD_X86_64) {
 		char *ret = calloc(1024, sizeof(char));
-		sprintf(ret, "\taddq $16, %%rsp\n\tpopq %%rbp\n");
+		sprintf(ret, "\taddq $32, %%rsp\n\tpopq %%rbp\n");
 		return ret;
 	} else if(CPU==I386) {
 		char *ret = calloc(1024, sizeof(char));
-		sprintf(ret, "\taddl $16, %%esp\n\tpopl %%ebp\n");
+		sprintf(ret, "\taddl $32, %%esp\n\tpopl %%ebp\n");
 		return ret;
 	}
 	return NULL;
+}
+
+char *initLocalVariables(Function *func) {
+	if(func==NULL) return NULL;
+	char *res = NULL;
+
+	return res;
 }
 
 char *mapRegisterAMD_X86_64(char *reg) {
@@ -60,6 +67,41 @@ char *mapRegisterAMD_X86_64(char *reg) {
     	};
 	}
     return NULL;
+}
+
+char *getCurrentVar(struct parserData *parser, Instruction *ins, int argSpot) {
+	if(parser==NULL||ins==NULL) return NULL;
+	char *res = NULL;
+	Variable *v = NULL;
+	v = getVarFrom(parser, ins->arguments[argSpot]);
+	char asmVName[1024];
+	if(v!=NULL) {
+		switch(v->type) {
+			case STRING: snprintf(asmVName, sizeof(asmVName),
+								 "wl_str_%s", ins->arguments[argSpot]);break;
+			case CHAR: snprintf(asmVName, sizeof(asmVName),
+							   "wl_ch_%s", ins->arguments[argSpot]);break;
+			case INT: snprintf(asmVName, sizeof(asmVName),
+							  "wl_int_%s", ins->arguments[argSpot]);break;
+			case FLOAT: snprintf(asmVName, sizeof(asmVName),
+								"wl_fl_%s", ins->arguments[argSpot]);break;
+			case VOID: /*TODO*/break;
+			case ZERO: snprintf(asmVName, sizeof(asmVName), 
+							   "wl_z_%s", ins->arguments[argSpot]);break;
+		};
+		if(CPU==AMD_X86_64) strcat(asmVName, "(%rip)");
+	} else {
+		v = NULL;
+		v = queryLocalVariable(parser, ins->lineNum, ins->arguments[argSpot]);
+		if(v!=NULL) snprintf(asmVName, sizeof(asmVName), "-%d(%%rbp)", v->offset);
+		else {
+			snprintf(asmVName, sizeof(asmVName), "_%s", ins->arguments[argSpot]);
+			if(CPU==AMD_X86_64) strcat(asmVName, "(%rip)");
+		}
+	}
+	res = calloc(strlen(asmVName)+1, sizeof(char));
+	strcpy(res, asmVName);
+	return res;
 }
 
 /*
@@ -147,52 +189,30 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 			char *val1 = NULL;
 			char *val2 = NULL;
 			if(checkRegister(ins.arguments[0])) {
-				char *ARMReg = mapRegisterAMD_X86_64(ins.arguments[0]);
-				val1 = calloc(strlen(ARMReg)+128, sizeof(char));
-				strcpy(val1, ARMReg);
+				char *AMDReg = mapRegisterAMD_X86_64(ins.arguments[0]);
+				val1 = calloc(strlen(AMDReg)+128, sizeof(char));
+				strcpy(val1, AMDReg);
+				STARTAPPCHAR(val1, '%');
 			} else {
-				Variable v = getVarFrom(out->parser, ins.arguments[0]);
-				char asmVName[1024];
-				switch(v.type) {
-					case STRING: sprintf(asmVName, "wl_str_%s", ins.arguments[0]);break;
-					case CHAR: sprintf(asmVName, "wl_ch_%s", ins.arguments[0]);break;
-					case INT: sprintf(asmVName, "wl_int_%s", ins.arguments[0]);break;
-					case FLOAT: sprintf(asmVName, "wl_fl_%s", ins.arguments[0]);break;
-					case VOID: /*TODO*/break;
-					case ZERO: sprintf(asmVName, "wl_z_%s", ins.arguments[0]);break;
-				};
-				val1 = calloc(strlen(asmVName)+128, sizeof(char));
-				strcpy(val1, asmVName);
+				char *var = getCurrentVar(out->parser, &ins, 0);
+				val1 = calloc(strlen(var)+1, sizeof(char));
+				strcpy(val1, var);
 			}
 			if(checkRegister(ins.arguments[1])) {
-				char *ARMReg = mapRegisterAMD_X86_64(ins.arguments[1]);
-				val2 = calloc(strlen(ARMReg)+128, sizeof(char));
-				strcpy(val2, ARMReg);
+				char *AMDReg = mapRegisterAMD_X86_64(ins.arguments[1]);
+				val2 = calloc(strlen(AMDReg)+128, sizeof(char));
+				strcpy(val2, AMDReg);
+				STARTAPPCHAR(val2, '%');
 			} else {
-				Variable v = getVarFrom(out->parser, ins.arguments[1]);
-				char asmVName[1024];
-				switch(v.type) {
-					case STRING: sprintf(asmVName, "wl_str.%s", ins.arguments[1]);break;
-					case CHAR: sprintf(asmVName, "wl_ch_%s", ins.arguments[1]);break;
-					case INT: sprintf(asmVName, "wl_int_%s", ins.arguments[1]);break;
-					case FLOAT: sprintf(asmVName, "wl_fl_%s", ins.arguments[1]);break;
-					case VOID: /*TODO*/break;
-					case ZERO: sprintf(asmVName, "wl_z_%s", ins.arguments[0]);break;
-				};
-				val2 = calloc(strlen(asmVName)+128, sizeof(char));
-				strcpy(val2, asmVName);
+				char *var = getCurrentVar(out->parser, &ins, 1);
+				val2 = calloc(strlen(var)+1, sizeof(char));
+				strcpy(val2, var);
 			}
 			char *mov = "movq";
 			if(CPU==AMD_X86_64) {
-				if(!ISREG(val1)) strcat(val1, "(%rip)");
-				else STARTAPPCHAR(val1, '%');
-				if(!ISREG(val2)) strcat(val2, "(%rip)");
-				else STARTAPPCHAR(val2, '%');
 				snprintf(outBuf, sizeof(outBuf),
 						"\t%s %s,%s\n", mov, val1, val2);
 			} else if(CPU==I386) {
-				if(ISREG(val1)) STARTAPPCHAR(val1, '%');
-				if(ISREG(val2)) STARTAPPCHAR(val2, '%');
 				snprintf(outBuf, sizeof(outBuf),
 						"\tmovl %s,%s\n", val1, val2);
 			}

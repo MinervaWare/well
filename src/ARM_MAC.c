@@ -167,13 +167,13 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 				val1 = calloc(strlen(ARMReg)+1, sizeof(char));
 				strcpy(val1, ARMReg);
 			} else {
-				Variable v = getVarFrom(out->parser, ins.arguments[0]);
+				Variable *v = getVarFrom(out->parser, ins.arguments[0]);
 				/*If we are moving a var we need to set the type for the scope's future*/
-				macRegData->prevRegType = getVarRegType(v.type);
+				macRegData->prevRegType = getVarRegType(v->type);
 
 				char asmVName[1024];
-				if(v.varName!=NULL) {
-					switch(v.type) {
+				if(v->varName!=NULL) {
+					switch(v->type) {
 						case STRING: sprintf(asmVName, "wl_str.%s", ins.arguments[0]);break;
 						case CHAR: sprintf(asmVName, "wl_ch_%s", ins.arguments[0]);break;
 						case INT: sprintf(asmVName, "wl_int_%s", ins.arguments[0]);break;
@@ -190,10 +190,10 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 				val2 = calloc(strlen(ARMReg)+1, sizeof(char)); 
 				strcpy(val2, ARMReg);
 			} else {
-				Variable v = getVarFrom(out->parser, ins.arguments[1]);
+				Variable *v = getVarFrom(out->parser, ins.arguments[1]);
 				char asmVName[1024];
-				if(v.varName!=NULL) {
-					switch(v.type) {
+				if(v->varName!=NULL) {
+					switch(v->type) {
 						case STRING: sprintf(asmVName, "wl_str.%s", ins.arguments[1]);break;
 						case CHAR: sprintf(asmVName, "wl_ch_%s", ins.arguments[1]);break;
 						case INT: sprintf(asmVName, "wl_int_%s", ins.arguments[1]);break;
@@ -206,12 +206,12 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 				strcpy(val2, asmVName);
 			}
 
-			Variable var = getVarFrom(out->parser, ins.arguments[0]);
-			if(var.varName!=NULL) {
+			Variable *var = getVarFrom(out->parser, ins.arguments[0]);
+			if(var->varName!=NULL) {
 				snprintf(outBuf, sizeof(outBuf), 
 						"\tadrp %s,%s@PAGE\n\tadd %s, %s, %s@PAGEOFF\n",
 						val2, val1, val2, val2, val1);
-				switch(var.type) {
+				switch(var->type) {
 					case INT: snprintf(outBuf, sizeof(outBuf), 
 									  "\tadrp %s,%s@PAGE\n\tldr w%s, [%s, %s@PAGEOFF]\n",
 									  val2, val1, val2+1, val2, val1);

@@ -10,6 +10,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <stdint.h>
 #include <ctype.h>
 
 #define WLOG(logLevel, ...) \

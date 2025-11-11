@@ -1,66 +1,54 @@
-	.section __TEXT,__text
-	.global _switch
-	.p2align 2
-_switch:
-	sub sp, sp, #32
-	stp x29, x30, [sp, #16]
-	add x29, sp, #16
-	adrp wl_int_tmp,x0@PAGE
-	add wl_int_tmp, wl_int_tmp, x0@PAGEOFF
-	adrp x0,x1@PAGE
-	add x0, x0, x1@PAGEOFF
-	adrp x1,wl_int_tmp@PAGE
-	ldr w1, [x1, wl_int_tmp@PAGEOFF]
-	ldp x29, x30, [sp, #16]
-	add sp, sp, #32
+	.text
+	.global switch
+switch:
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $32, %rsp
+	movq $0, -8(%rbp)
+	movq %rdi,-8(%rbp)
+	movq %rsi,%rdi
+	movq -8(%rbp),%rsi
+	addq $32, %rsp
+	popq %rbp
 	ret
-	.section __TEXT,__text
-	.global _main
-	.p2align 2
-_main:
-	sub sp, sp, #32
-	stp x29, x30, [sp, #16]
-	add x29, sp, #16
-	adrp x0,wl_str.testLocal@PAGE
-	add x0, x0, wl_str.testLocal@PAGEOFF
-	bl _printf
-	adrp x0,wl_int_a@PAGE
-	ldr w0, [x0, wl_int_a@PAGEOFF]
-	adrp x1,wl_int_b@PAGE
-	ldr w1, [x1, wl_int_b@PAGEOFF]
-	bl _switch
-	adrp x2,x1@PAGE
-	add x2, x2, x1@PAGEOFF
-	adrp x1,x0@PAGE
-	add x1, x1, x0@PAGEOFF
-	adrp x0,wl_str.sw@PAGE
-	add x0, x0, wl_str.sw@PAGEOFF
-	bl _printf
-	mov x0, #0
-	ldp x29, x30, [sp, #16]
-	add sp, sp, #32
+	.text
+	.global main
+main:
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $32, %rsp
+	movq wl_str_testLocal(%rip), %r10
+	movq %r10, -8(%rbp)
+	movq $5, -16(%rbp)
+	movq $2, -24(%rbp)
+	movq wl_str_sw(%rip), %r10
+	movq %r10, -32(%rbp)
+	movq -8(%rbp),%rdi
+	call printf
+	movq -16(%rbp),%rdi
+	movq -24(%rbp),%rsi
+	call switch
+	movq %rsi,%rdx
+	movq %rdi,%rsi
+	movq -32(%rbp),%rdi
+	call printf
+	movq %rdi, %rax
+	addq $32, %rsp
+	popq %rbp
 	ret
-
-	.global wl_int_c
-	.p2align 2,0x0
-wl_int_c:
-	.long 0x0
-
-	.global wl_int_tmp
-	.p2align 2,0x0
-wl_int_tmp:
-	.long 0x0
-wl_str.testLocal:
+	.text
+	.global wl_str_testLocal
+.rawwl_strtestLocal:
 	.asciz "I am the Walrus\n"
-
-	.global wl_int_a
-	.p2align 2,0x0
-wl_int_a:
-	.long 0x5
-
-	.global wl_int_b
-	.p2align 2,0x0
-wl_int_b:
-	.long 0x2
-wl_str.sw:
-	.asciz "a: %d, b: %d\n"
+	.data
+	.align 8
+wl_str_testLocal:
+	.quad .rawwl_strtestLocal
+	.text
+	.global wl_str_sw
+.rawwl_strsw:
+	.asciz "a: %ld, b: %ld\n"
+	.data
+	.align 8
+wl_str_sw:
+	.quad .rawwl_strsw

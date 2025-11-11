@@ -107,7 +107,10 @@ void getScopes(struct parserData *parser) {
 		if(currentLine!=NULL&&
 				checkImportantType(currentLine)) {
 			char *name = getScopeName(currentLine);
-			Scope s = (Scope){ getScopeType(currentLine), NULL, i};
+			Scope s = (Scope){ 
+				.scopeType = getScopeType(currentLine), 
+				.scopeName = NULL,
+				.lineNum = i};
 			s.scopeName = calloc(strlen(name)+1, sizeof(char));
 			strcpy(s.scopeName, name);
 			if(s.scopeType == NONE) continue;
@@ -170,12 +173,13 @@ void setVariableType(Variable *var, char *type,
 			file, lineNum, "constants", "");
 }
 
-Variable getVarFrom(struct parserData *parser, char *name) {
+Variable *getVarFrom(struct parserData *parser, char *name) {
 	int i;
 	for(i=0;i<parser->totalVariables&&parser->variables[i].varName!=NULL;i++) {
-		if(!strcmp(parser->variables[i].varName, name)) return parser->variables[i];
+		if(!strcmp(parser->variables[i].varName, name))
+			return &parser->variables[i];
 	}
-	return (Variable){.varName=NULL};
+	return NULL;
 }
 
 /*This is expected to be ran AFTER scopes have been initialized*/
@@ -185,14 +189,18 @@ void getVariables(struct parserData *parser) {
 	parser->totalVariables = 0;
 
 	int i, j=0;
+	static unsigned int inScope = 0;
 	for(i=0;i<MAXSCOPES;i++) {
 		if(parser->scopes[i].scopeName==NULL) break;
-		
-		if(parser->scopes[i].scopeType == VARIABLE) {
+		if(parser->scopes[i].scopeType == CONSTANTS) inScope=1;
+		if(parser->scopes[i].scopeType < VARIABLE) inScope = 0;
+		if(parser->scopes[i].scopeType == VARIABLE && inScope) {
 			
 			parser->variables = (Variable *)realloc(parser->variables, 
 					sizeof(Variable)*(parser->totalVariables+1));
 			char *line = parser->fileBuffer[parser->scopes[i].lineNum];
+			if(line==NULL) continue;
+			if(strstr(line, "}")) break;
 			char *data = strstr(line, "=");
 			if(data==NULL) {
  				WLOG_WERROR(WERROR_UNINITIALIZED_VARIABLE,
@@ -238,9 +246,33 @@ void getVariables(struct parserData *parser) {
 	}
 }
 
-/*
- *   ~int:abc = 123
- * */
+Variable *queryLocalVariable(struct parserData *parser, 
+		int lineNum, char *var) {
+	Variable *res = NULL;
+	if(var==NULL||parser==NULL) return res;
+	int i;
+	Function *func = NULL;
+	if(parser->totalFunctions>2) {
+		for(i=1;i<parser->totalFunctions;i++) {
+			func = &parser->functions[i-1];
+			Function *func2 = &parser->functions[i];
+			if(lineNum>func->scope.lineNum&&
+					lineNum<func2->scope.lineNum) break;
+		}
+	} else if(parser->totalFunctions>0) {
+		if(lineNum>parser->functions[1].scope.lineNum)
+			func = &parser->functions[1];
+		else func = &parser->functions[0];
+	}
+	for(i=0;i<func->lvt->totalVariables;i++) {
+		if(!strcmp(var,func->lvt->variables[i].varName))
+			res = &func->lvt->variables[i];
+	}
+	return res;
+}
+
+
+
 char *LVTGetType(char *line) {
 	if(line==NULL) return NULL;
 	char *lcpy = calloc(strlen(line)+1, sizeof(char));
@@ -283,7 +315,7 @@ char *LVTGetVName(char *line) {
 /*This will be changed once bitfields are added*/
 int LVTGetOffsetSize(enum varTypes type) {
 	switch(type) {
-		case INT: return sizeof(int32_t);
+		case INT: return sizeof(int64_t);
 		case CHAR: return sizeof(char);
 		case STRING: return sizeof(char *) /*8*/;
 		case FLOAT: return sizeof(float);
@@ -294,19 +326,16 @@ int LVTGetOffsetSize(enum varTypes type) {
 }
 
 void buildFunctionLVT(Function *func) {
-	static int curOffset = 0;
+	int curOffset = 0;
 	if(func==NULL) return;
 	if(func->lvt==NULL) {
 		func->lvt = calloc(1, sizeof(LVT));
-		func->lvt->offsets = NULL;
 		func->lvt->variables = NULL;
 		func->lvt->totalVariables = 0;
 		func->lvt->cap = DEFALLOCSTEP;
 	}
-	if(func->lvt->variables==NULL&&
-			func->lvt->offsets==NULL) {
+	if(func->lvt->variables==NULL) {
 		func->lvt->variables = calloc(DEFALLOCSTEP, sizeof(Variable));	
-		func->lvt->offsets = calloc(DEFALLOCSTEP, sizeof(int));
 	}
 	int i, *j = &func->lvt->totalVariables;
 	for(i=0;i<func->dataLength;i++) {
@@ -317,8 +346,6 @@ void buildFunctionLVT(Function *func) {
 					func->lvt->cap += DEFALLOCSTEP;
 					func->lvt->variables = (Variable *)realloc(func->lvt->variables,
 							sizeof(Variable)*func->lvt->cap);
-					func->lvt->offsets = (int *)realloc(func->lvt->offsets,
-							sizeof(int)*func->lvt->cap);
 				}
 				char *type = LVTGetType(func->data[i]);
 				char *name = LVTGetVName(func->data[i]);
@@ -342,8 +369,10 @@ void buildFunctionLVT(Function *func) {
 				strcpy(func->lvt->variables[*j].varName, name);
 				func->lvt->variables[*j].value = calloc(strlen(value)+1, sizeof(char));
 				strcpy(func->lvt->variables[*j].value, value);
-				func->lvt->offsets[*j] = LVTGetOffsetSize(
+
+				curOffset += LVTGetOffsetSize(
 						func->lvt->variables[*j].type);
+				func->lvt->variables[*j].offset = curOffset;
 				*j = *j+1;
 			}
 		}	
@@ -538,6 +567,7 @@ void parseFunctionInstructions(Function *func) {
 			parseInstruction(cpy,
 					&func->instructions[j]);
 			free(cpy);
+			func->instructions[j].lineNum = func->scope.lineNum+i;
 			j++;
 		}
 	}
@@ -592,7 +622,6 @@ void getFunctionData(struct parserData *parser) {
 			f.scope = *s;
 
 			f.lvt = calloc(1, sizeof(LVT));
-			f.lvt->offsets = NULL;
 			f.lvt->variables = NULL;
 			f.lvt->totalVariables = 0;
 
