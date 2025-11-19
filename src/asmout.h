@@ -10,9 +10,9 @@
 
 /*
  * Registers:
- * R0 - R7: General purpose registers
+ * R1 - R8: General purpose registers
  * SP: Stack Pointer.
- * TODO add more for compat
+ * F1 - F7: Floating point registers
  * */
 enum registers {
 	R1=0,
@@ -23,7 +23,14 @@ enum registers {
 	R6,
 	R7,
 	R8,
-	SP
+	SP,
+	F1, 
+	F2,
+	F3,
+	F4,
+	F5,
+	F6,
+	F7
 };
 
 struct bufferOut {

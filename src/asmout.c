@@ -33,6 +33,13 @@ int regToEnum(char *reg) {
 	if(!strcmp(reg, "r7")) return R7;
 	if(!strcmp(reg, "r8")) return R8;
 	if(!strcmp(reg, "sp")) return SP;
+	if(!strcmp(reg, "f1")) return F1;
+	if(!strcmp(reg, "f2")) return F2;
+	if(!strcmp(reg, "f3")) return F3;
+	if(!strcmp(reg, "f4")) return F4;
+	if(!strcmp(reg, "f5")) return F5;
+	if(!strcmp(reg, "f6")) return F6;
+	if(!strcmp(reg, "f7")) return F7;
 	return R1;
 }
 
@@ -71,6 +78,7 @@ char *getCPUMain() {
 		case RS6000: strcpy(ret, "main"); break;
 		case SZ_IBM: strcpy(ret, "main"); break;
 		case SPARC: strcpy(ret, "main"); break;
+		case MIPS: strcpy(ret, "main"); break;
 	}
 	return ret;
 }
@@ -98,6 +106,7 @@ char *createFunctionHeader(char *name) {
 				case RS6000: break; /*TODO*/
 				case SZ_IBM: break; /*TODO*/
 				case SPARC: break; /*TODO*/
+				case MIPS: break; /*TODO*/
 	};
 	return head;
 }
@@ -129,7 +138,11 @@ char *getLVTAllocation(Function *func) {
 										 "\tmovq %%r10, -%d(%%rbp)\n",
 										 vName, offset); 
 							    break;
-					case FLOAT: break;
+					case FLOAT: snprintf(buf, sizeof(buf),
+									  "\tmovess wl_fl_%s(%%rip), %%xmm7\n"
+									  "\tmovss %%xmm7, -%d(%%rbp)\n",
+									  vName, offset);
+								break;
 					case VOID: break;
 					case ZERO: break;
 				};
@@ -141,6 +154,7 @@ char *getLVTAllocation(Function *func) {
 							(strlen(res)+strlen(buf)+1)*sizeof(char));
 					strcat(res, buf);
 				}
+			} else if(CPU==ARM_MAC) {
 			}
 		}
 	}
@@ -196,6 +210,7 @@ void convertFunctions(AsmOut *out) {
 				case SZ_IBM: break; /*TODO*/
 				/*SUN*/
 				case SPARC: break; /*TODO*/
+				case MIPS: break; /*TODO*/
 			};
 			if(asmInstruction!=NULL&&strcmp(asmInstruction, "")) {
 				bufferSize+=strlen(asmInstruction)+
@@ -237,6 +252,7 @@ void convertFunctions(AsmOut *out) {
 				case RS6000: break; /*TODO*/
 				case SZ_IBM: break; /*TODO*/
 				case SPARC: break; /*TODO*/
+				case MIPS: break; /*TODO*/
 			};
 			if(deallocateStack!=NULL) strcat(deallocateStack, "\tret\n");
 			else deallocateStack = "\tret\n";
@@ -274,6 +290,7 @@ char *getAsmString(char *name, char *value) {
 		case RS6000: break; /*TODO*/
 		case SZ_IBM: break; /*TODO*/
 		case SPARC: break; /*TODO*/
+		case MIPS: break; /*TODO*/
 	};
 	char *ret = calloc(strlen(buf)+1, sizeof(char));
 	strcpy(ret, buf);
@@ -310,7 +327,7 @@ char *getAsmInt(char *name, char *value) {
 char *getAsmFloat(char *name, char *value) {
 	char *hexValue = floatToHex(value);
 	char nameBuf[strlen(name)+100];
-	snprintf(nameBuf, sizeof(nameBuf), "wl_int_%s", name);
+	snprintf(nameBuf, sizeof(nameBuf), "wl_fl_%s", name);
 	char buf[strlen(nameBuf)+strlen(hexValue)+100];
 	snprintf(buf, sizeof(buf), 
 			"\n\t.global %s\n\t.p2align 2,0x0\n%s:\n\t.long %s\n",
@@ -363,6 +380,15 @@ void convertVariables(AsmOut *out) {
 			char *asmVar = NULL;
 			if(f->lvt->variables[j].type==STRING) {
 				asmVar = getAsmString(f->lvt->variables[j].varName,
+						f->lvt->variables[j].value);
+				if(asmVar!=NULL) {
+					totalSize += strlen(asmVar);
+					out->buffers.variables = (char *)realloc(
+							out->buffers.variables, sizeof(char)*(totalSize+2));
+					strcat(out->buffers.variables, asmVar);	
+				}
+			} else if(f->lvt->variables[j].type==FLOAT) {
+				asmVar = getAsmFloat(f->lvt->variables[j].varName,
 						f->lvt->variables[j].value);
 				if(asmVar!=NULL) {
 					totalSize += strlen(asmVar);

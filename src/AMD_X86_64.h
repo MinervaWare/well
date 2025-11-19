@@ -14,8 +14,15 @@ enum registersAMD_X86_64 {
   	RDI,
   	RSI,
   	RAX,
-  	XMM0,
-  	AMD64SP
+  	R10_,
+  	AMD64SP,
+	XMM0,
+	XMM1,
+	XMM2,
+	XMM3,
+	XMM4,
+	XMM5,
+	XMM6
 #else
     RDI=0,
     RSI,
@@ -24,8 +31,15 @@ enum registersAMD_X86_64 {
     R8_,
     R9_,
     RAX, /*Return value*/
-    XMM0,
-    AMD64SP
+    R10_,
+    AMD64SP,
+	XMM0,
+	XMM1,
+	XMM2,
+	XMM3,
+	XMM4,
+	XMM5,
+	XMM6
 #endif
 };
 

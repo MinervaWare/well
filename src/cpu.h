@@ -14,6 +14,7 @@ enum cpuType {
 	RS6000,
 	SPARC,
 	SZ_IBM, /*System 370, 390*/
+	MIPS
 };
 
 static enum cpuType CPU =
@@ -47,6 +48,8 @@ static enum cpuType CPU =
 	SPARC;
 #elif defined __370__ || __s390__ || __s390x__ || __zarch__
 	SZ_IBM;
+#elif defined __mips__ || mips || __mips
+	MIPS;
 #endif
 
 #define GETCPUSTR(cpu_t, str) \
@@ -61,6 +64,7 @@ static enum cpuType CPU =
 		case POWERPC: str="POWERPC";break; \
 		case RS6000: str="RS/6000";break; \
 		case SPARC: str="SPARC";break; \
-		case SZ_IBM: str="System/370-90";break;};
+		case SZ_IBM: str="System/370-90";break; \
+		case MIPS: str="MIPS";break;};
 
 #endif
