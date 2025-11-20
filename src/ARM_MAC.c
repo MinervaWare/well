@@ -18,14 +18,14 @@ MacRegData *macRegData = NULL;
 char *stackAllocateARM_MAC() {
 	/*auto to 16*/
 	char *ret = calloc(1024, sizeof(char));
-	sprintf(ret, "\tsub sp, sp, #32\n\tstp x29, x30, [sp, #16]\n\tadd x29, sp, #16\n");
+	sprintf(ret, "\tsub sp, sp, #32\n\tstp x29, x30, [sp, #32]\n\tadd x29, sp, #32\n");
 	return ret; 
 }
 
 char *stackDeallocateARM_MAC() {
 	/*auto to 16*/
 	char *ret = calloc(1024, sizeof(char));
-	sprintf(ret, "\tldp x29, x30, [sp, #16]\n\tadd sp, sp, #32\n");
+	sprintf(ret, "\tldp x29, x30, [sp, #32]\n\tadd sp, sp, #32\n");
 	return ret; 
 }
 
@@ -80,6 +80,98 @@ char getVarRegType(enum varTypes type) {
 		case STRING: 
 		default: return 'x';
 	};
+}
+
+char *ARM_MACgetCurrentVar(struct parserData *parser, Instruction *ins, int argSpot) {
+	if(parser==NULL||ins==NULL) return NULL;
+	char *res = NULL;
+	Variable *v = NULL;
+	v = getVarFrom(parser, ins->arguments[argSpot]);
+	char asmVName[1024];
+	if(v!=NULL) {
+		switch(v->type) {
+			case STRING: snprintf(asmVName, sizeof(asmVName),
+								 "wl_str_%s", ins->arguments[argSpot]);break;
+			case CHAR: snprintf(asmVName, sizeof(asmVName),
+							   "wl_ch_%s", ins->arguments[argSpot]);break;
+			case INT: snprintf(asmVName, sizeof(asmVName),
+							  "wl_int_%s", ins->arguments[argSpot]);break;
+			case FLOAT: snprintf(asmVName, sizeof(asmVName),
+								"wl_fl_%s", ins->arguments[argSpot]);break;
+			case VOID: /*TODO*/break;
+			case ZERO: snprintf(asmVName, sizeof(asmVName), 
+							   "wl_z_%s", ins->arguments[argSpot]);break;
+		};
+	} else {
+		v = NULL;
+		v = queryLocalVariable(parser, ins->lineNum, ins->arguments[argSpot]);
+		if(v!=NULL) snprintf(asmVName, sizeof(asmVName), "[sp, %d]", v->offset);
+		else snprintf(asmVName, sizeof(asmVName), "_%s", ins->arguments[argSpot]);
+	}
+	res = calloc(strlen(asmVName)+1, sizeof(char));
+	strcpy(res, asmVName);
+	return res;
+}
+
+char *ARM_MACgetMoveInstructions(struct parserData *parser, Instruction *ins, 
+		char *val1, char *val2) {
+	char *res = NULL;
+	char outBuf[2048];
+	Variable *var = getVarFrom(parser, ins->arguments[0]);
+	if(var) {
+		if(var->varName!=NULL) {
+			switch(var->type) {
+				case INT: snprintf(outBuf, sizeof(outBuf), 
+								  "\tadrp %s,%s@PAGE\n\tldr w%s, [%s, %s@PAGEOFF]\n",
+								  val2, val1, val2+1, val2, val1);
+						  break;
+				case CHAR: snprintf(outBuf, sizeof(outBuf), 
+								  "\tadrp %s,%s@PAGE\n\tldrsb w%s, [%s, %s@PAGEOFF]\n",
+								  val2, val1, val2+1, val2, val1);
+						   break;
+				case STRING: snprintf(outBuf, sizeof(outBuf), 
+								  "\tadrp %s,%s@PAGE\n\tadd %s, %s, %s@PAGEOFF\n",
+								  val2, val1, val2, val2, val1);
+							 break;
+
+				case FLOAT: snprintf(outBuf, sizeof(outBuf), 
+								  "\tadrp %s,%s@PAGE\n\tldr s%s, [%s, %s@PAGEOFF]\n",
+								  val2, val1, val2+1, val2, val1);
+							break;
+				default: snprintf(outBuf, sizeof(outBuf), 
+								 "\tadrp %s,%s@PAGE\n\tadd %s, %s, %s@PAGEOFF\n",
+								 val2, val1, val2, val2, val1);
+						 break;
+			};
+		}
+	} else {
+		var = queryLocalVariable(parser, ins->lineNum, ins->arguments[0]);
+		if(var) {
+			snprintf(outBuf, sizeof(outBuf),
+					"\tldr %s, [sp, #%d]\n", val2, var->offset);
+		} else {
+			if(checkRegister(ins->arguments[0])&&
+					!checkRegister(ins->arguments[1])) {
+				var = queryLocalVariable(parser, ins->lineNum, ins->arguments[1]);
+				if(var) {
+					snprintf(outBuf, sizeof(outBuf), 
+							"\tstr %s, [sp, #%d]\n", val1, var->offset);
+					printf("%s\n", outBuf);
+				}
+			} else if(checkRegister(ins->arguments[0])&&
+					checkRegister(ins->arguments[1])) {
+				snprintf(outBuf, sizeof(outBuf), 
+						"\tmov %s, %s\n", val2, val1);
+			} else {
+				snprintf(outBuf, sizeof(outBuf), 
+						"\tadrp %s,%s@PAGE\n\tadd %s, %s, %s@PAGEOFF\n",
+						val2, val1, val2, val2, val1);
+			}
+		}
+	}
+	res = calloc(strlen(outBuf), sizeof(char));
+	strcpy(res, outBuf);
+	return res;
 }
 
 /*x registers are 64-bit w registers are 32*/
@@ -167,79 +259,21 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 				val1 = calloc(strlen(ARMReg)+1, sizeof(char));
 				strcpy(val1, ARMReg);
 			} else {
-				Variable *v = getVarFrom(out->parser, ins.arguments[0]);
-				/*If we are moving a var we need to set the type for the scope's future*/
-				macRegData->prevRegType = getVarRegType(v->type);
-
-				char asmVName[1024];
-				if(v->varName!=NULL) {
-					switch(v->type) {
-						case STRING: sprintf(asmVName, "wl_str.%s", ins.arguments[0]);break;
-						case CHAR: sprintf(asmVName, "wl_ch_%s", ins.arguments[0]);break;
-						case INT: sprintf(asmVName, "wl_int_%s", ins.arguments[0]);break;
-						case FLOAT: sprintf(asmVName, "wl_fl_%s", ins.arguments[0]);break;
-						case VOID: /*TODO*/break;
-						case ZERO: sprintf(asmVName, "wl_z_%s", ins.arguments[0]);break;
-					};
-				} else snprintf(asmVName, sizeof(asmVName), "_%s", ins.arguments[0]);
-				val1 = calloc(strlen(asmVName)+1, sizeof(char));
-				strcpy(val1, asmVName);
-			}
+				char *var = ARM_MACgetCurrentVar(out->parser, &ins, 0);
+				val1 = calloc(strlen(var)+1, sizeof(char));
+				strcpy(val1, var);			}
 			if(checkRegister(ins.arguments[1])) {
 				char *ARMReg = mapRegister(ins.arguments[1]);
 				val2 = calloc(strlen(ARMReg)+1, sizeof(char)); 
 				strcpy(val2, ARMReg);
 			} else {
-				Variable *v = getVarFrom(out->parser, ins.arguments[1]);
-				char asmVName[1024];
-				if(v->varName!=NULL) {
-					switch(v->type) {
-						case STRING: sprintf(asmVName, "wl_str.%s", ins.arguments[1]);break;
-						case CHAR: sprintf(asmVName, "wl_ch_%s", ins.arguments[1]);break;
-						case INT: sprintf(asmVName, "wl_int_%s", ins.arguments[1]);break;
-						case FLOAT: sprintf(asmVName, "wl_fl_%s", ins.arguments[1]);break;
-						case VOID: /*TODO*/break;
-						case ZERO: sprintf(asmVName, "wl_z_%s", ins.arguments[0]);break;
-					};
-				} else snprintf(asmVName, sizeof(asmVName), "_%s", ins.arguments[1]);
-				val2 = calloc(strlen(asmVName)+1, sizeof(char));
-				strcpy(val2, asmVName);
+				char *var = ARM_MACgetCurrentVar(out->parser, &ins, 1);
+				val2 = calloc(strlen(var)+1, sizeof(char));
+				strcpy(val2, var);
 			}
 
-			Variable *var = getVarFrom(out->parser, ins.arguments[0]);
-			if(var->varName!=NULL) {
-				snprintf(outBuf, sizeof(outBuf), 
-						"\tadrp %s,%s@PAGE\n\tadd %s, %s, %s@PAGEOFF\n",
-						val2, val1, val2, val2, val1);
-				switch(var->type) {
-					case INT: snprintf(outBuf, sizeof(outBuf), 
-									  "\tadrp %s,%s@PAGE\n\tldr w%s, [%s, %s@PAGEOFF]\n",
-									  val2, val1, val2+1, val2, val1);
-							  break;
-					case CHAR: snprintf(outBuf, sizeof(outBuf), 
-									  "\tadrp %s,%s@PAGE\n\tldrsb w%s, [%s, %s@PAGEOFF]\n",
-									  val2, val1, val2+1, val2, val1);
-							   break;
-					case STRING: snprintf(outBuf, sizeof(outBuf), 
-									  "\tadrp %s,%s@PAGE\n\tadd %s, %s, %s@PAGEOFF\n",
-									  val2, val1, val2, val2, val1);
-								 break;
-
-					case FLOAT: snprintf(outBuf, sizeof(outBuf), 
-									  "\tadrp %s,%s@PAGE\n\tldr s%s, [%s, %s@PAGEOFF]\n",
-									  val2, val1, val2+1, val2, val1);
-								break;
-					default: snprintf(outBuf, sizeof(outBuf), 
-									 "\tadrp %s,%s@PAGE\n\tadd %s, %s, %s@PAGEOFF\n",
-									 val2, val1, val2, val2, val1);
-							 break;
-				};
-			} else {
-				snprintf(outBuf, sizeof(outBuf), 
-						"\tadrp %s,%s@PAGE\n\tadd %s, %s, %s@PAGEOFF\n",
-						val2, val1, val2, val2, val1);
-			}
-		
+			char *mov = ARM_MACgetMoveInstructions(out->parser, &ins, val1, val2);
+			strcpy(outBuf, mov);
 		/*
 		 * Bitwise Instructions (Logical modifications are made with symbol operators)
 		 * */

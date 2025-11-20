@@ -52,7 +52,7 @@ enum registersAMD_X86_64 {
 	 !strcmp(a_,"sp"))||!strcmp(a_,"xmm0")|| \
 	 !strcmp(a_,"xmm1")||!strcmp(a_,"xmm2")|| \
 	 !strcmp(a_,"xmm3")||!strcmp(a_,"xmm4")|| \
-	 !strcmp(a_,"xmm5")||!strcmp(a_,"amm6")
+	 !strcmp(a_,"xmm5")||!strcmp(a_,"xmm6")
 
 char *stackAllocateAMD_X86_64();
 char *stackDeallocateAMD_X86_64();

@@ -155,6 +155,35 @@ char *getLVTAllocation(Function *func) {
 					strcat(res, buf);
 				}
 			} else if(CPU==ARM_MAC) {
+				switch(func->lvt->variables[i].type) {
+					case INT: snprintf(buf, sizeof(buf),
+									  "\tmov x28, %s\n"
+									  "\tstr x28, [sp, #%d]\n",
+									  value, offset);
+							  break;
+					case CHAR: snprintf(buf, sizeof(buf),
+									  "\tmov x28, #%d\n"
+									  "\tstr x28, [sp, #%d]\n",
+									  (int)value[0], offset);
+							   break;
+					case STRING: snprintf(buf, sizeof(buf),
+										 "\tadrp x28, wl_str_%s@PAGE\n"
+										 "\tadd x28, x28, wl_str_%s@PAGEOFF\n"
+										 "\tstr x28, [sp, %d]\n",
+										 vName, vName, offset);
+							     break;
+					case FLOAT: break;
+					case VOID: break;
+					case ZERO: break;
+				};
+				if(res==NULL) {
+					res = calloc(strlen(buf)+1, sizeof(char));
+					strcpy(res, buf);
+				} else {
+					res = (char *)realloc(res,
+							(strlen(res)+strlen(buf)+1)*sizeof(char));
+					strcat(res, buf);
+				}
 			}
 		}
 	}
@@ -282,7 +311,7 @@ char *getAsmString(char *name, char *value) {
                            ".data\n\t.align 8\nwl_str_%s:\n\t.long .rawwl_str%s\n",
                            name, name, value, name, name);break;
 		case ITANIUM_64: break; /*TODO*/
-		case ARM_MAC: snprintf(buf, sizeof(buf), "wl_str.%s:\n\t.asciz %s\n",
+		case ARM_MAC: snprintf(buf, sizeof(buf), "wl_str_%s:\n\t.asciz %s\n",
                            name, value);break;
         case ARMv7: break; /*TODO*/
 		case ARMv8: break; /*TODO*/
