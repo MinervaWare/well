@@ -5,6 +5,8 @@
 #include <string.h>
 
 #include "parser.h"
+/*Copyright (c) 2022-2025 MinervaWare LLC*/
+
 #include "asmout.h"
 #include "cpu.h"
 #include "ARM_MAC.h"
@@ -190,14 +192,14 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 
 	/*Special instructions*/
 	/*Inline - Drops direct asm instructions into the output*/
-	if(!strcmp(ins.instruction, "inline")) 
+	if(!strcmp(ins.instruction, "inline")) { 
 		snprintf(outBuf, sizeof(outBuf), "\t%s\n", dumpInlineASM(&ins));
 	
 
 	/*
 	 * 0 argument instructions
 	 * */
-	if(args==0) {
+	} else if(args==0) {
 		/*
 		 * Jump - Jump to or from function 
 		 * NOTE: This is "temporary" until I get if statements and loops going

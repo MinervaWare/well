@@ -13,11 +13,28 @@
 
 # NOTE
 
-* Wellang is in an extremely early state with pending syntax changes and the development of the compiler. MAKE SURE you keep wellang up to date in these early stages.
+* Wellang is in an extremely early state with pending syntax changes and the development of the compiler. MAKE SURE you keep wellang up to date!
 
 # About
 
-Wellang is a high-level assembly language targeted as an educational resource for people looking to learn assembly language and CPU logic. Wellang comes with a single instruction set that will compile to any system architecture making it very portable and easy to use on any device.
+Wellang is a high-level assembly language. Our goal is to achieve one instruction set for every CPU, give a faster alternative to LLVM for language developers, and provide a good educational path to people looking to learn the basics of an assembly language.
+
+### Supported Architectures
+
+This is the list of actively maintained architectures for Wellang. This does not mean fully implemented or finished (reference the note above), it simply means they are being actively developed. 
+
+* [ ] ALPHA
+* [x] AMD_X86_64
+* [x] I386
+* [x] ARM_MAC (aarch64 - ARMv8)
+* [ ] ARMv7 (aarch32)
+* [ ] ITANIUM_64
+* [ ] POWERPC 
+* [ ] RS6000 (This is for POWER, seperate from PPC)
+* [ ] SPARC
+* [ ] SZ_IBM (s370/390)
+* [ ] MIPS (For now this will just be 64-bit little endian)
+* [ ] HPPA
 
 ### NEED HELP?
 

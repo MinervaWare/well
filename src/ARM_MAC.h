@@ -1,4 +1,4 @@
-/*Copyright (c) 2024 Tristan Wellman*/
+/*Copyright (c) 2022-2025 MinervaWare LLC*/
 #ifndef ARM_MAC_H
 #define ARM_MAC_H
 #include "util.h"

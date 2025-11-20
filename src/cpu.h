@@ -1,4 +1,4 @@
-/*Copyright (c) 2024 Tristan Wellman*/
+/*Copyright (c) 2022-2025 MinervaWare LLC*/
 #ifndef CPU_H
 #define CPU_H
 
@@ -14,7 +14,8 @@ enum cpuType {
 	RS6000,
 	SPARC,
 	SZ_IBM, /*System 370, 390*/
-	MIPS
+	MIPS,
+	HPPA
 };
 
 static enum cpuType CPU =
@@ -50,6 +51,8 @@ static enum cpuType CPU =
 	SZ_IBM;
 #elif defined __mips__ || mips || __mips
 	MIPS;
+#elif defined __hppa__ || __HPPA__ || __hppa
+	HPPA;
 #endif
 
 #define GETCPUSTR(cpu_t, str) \

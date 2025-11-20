@@ -1,4 +1,4 @@
-/*Copyright (c) 2024 Tristan Wellman*/
+/*Copyright (c) 2022-2025 MinervaWare LLC*/
 
 #include "asmout.h"
 #include "cpu.h"
@@ -67,13 +67,13 @@ char *getCPUMain() {
 	/*I know this is redundant,
 	 * I still need to go through different compilers and sort the main per compiler, not CPU.*/
 	switch(CPU) {
+		case ARMv8:
 		case ARM_MAC: strcpy(ret, "main"); break;
 		case AMD_X86_64: strcpy(ret, "main"); break;
 		case I386: strcpy(ret, "main"); break; 
 		case ALPHA: strcpy(ret, "main"); break; 
 		case ITANIUM_64: strcpy(ret, "main"); break; 
 		case ARMv7: strcpy(ret, "main"); break;
-		case ARMv8: strcpy(ret, "main"); break;
 		case POWERPC: strcpy(ret, "main"); break;
 		case RS6000: strcpy(ret, "main"); break;
 		case SZ_IBM: strcpy(ret, "main"); break;
@@ -96,12 +96,12 @@ char *createFunctionHeader(char *name) {
                                            "\t.text\n\t.global %s\n%s:\n", name, name);
 						   break;				
 				case ITANIUM_64: break; /*TODO*/
+				case ARMv8:
 				case ARM_MAC: snprintf(head,bSize,
                                            "\t.section __TEXT,__text\n\t.global _%s\n\t.p2align 2\n_%s:\n",
                                            name, name);
-          break;
+							  break;
 				case ARMv7: break; /*TODO*/
-				case ARMv8: break; /*TODO*/
 				case POWERPC: break; /*TODO*/
 				case RS6000: break; /*TODO*/
 				case SZ_IBM: break; /*TODO*/
@@ -154,7 +154,7 @@ char *getLVTAllocation(Function *func) {
 							(strlen(res)+strlen(buf)+1)*sizeof(char));
 					strcat(res, buf);
 				}
-			} else if(CPU==ARM_MAC) {
+			} else if(CPU==ARM_MAC||CPU==ARMv8) {
 				switch(func->lvt->variables[i].type) {
 					case INT: snprintf(buf, sizeof(buf),
 									  "\tmov x28, %s\n"
@@ -227,12 +227,12 @@ void convertFunctions(AsmOut *out) {
 							break;
 				case ITANIUM_64: break; /*TODO*/
 				/*ARM*/
+				case ARMv8:
 				case ARM_MAC: 
 							asmInstruction = convertInstructionARM_MAC(out, *curIns);
 							stackAllocation = stackAllocateARM_MAC();
 							break;
 				case ARMv7: break; /*TODO*/
-				case ARMv8: break; /*TODO*/
 				/*IBM*/
 				case POWERPC: break; /*TODO*/
 				case RS6000: break; /*TODO*/
@@ -274,9 +274,9 @@ void convertFunctions(AsmOut *out) {
 				case AMD_X86_64: deallocateStack = stackDeallocateAMD_X86_64();break;
 				case I386: deallocateStack = stackDeallocateAMD_X86_64();break;
 				case ITANIUM_64: break; /*TODO*/
+				case ARMv8:
 				case ARM_MAC: deallocateStack = stackDeallocateARM_MAC();break;
 				case ARMv7: break; /*TODO*/
-				case ARMv8: break; /*TODO*/
 				case POWERPC: break; /*TODO*/
 				case RS6000: break; /*TODO*/
 				case SZ_IBM: break; /*TODO*/
@@ -311,10 +311,10 @@ char *getAsmString(char *name, char *value) {
                            ".data\n\t.align 8\nwl_str_%s:\n\t.long .rawwl_str%s\n",
                            name, name, value, name, name);break;
 		case ITANIUM_64: break; /*TODO*/
+		case ARMv8:
 		case ARM_MAC: snprintf(buf, sizeof(buf), "wl_str_%s:\n\t.asciz %s\n",
                            name, value);break;
         case ARMv7: break; /*TODO*/
-		case ARMv8: break; /*TODO*/
 		case POWERPC: break; /*TODO*/
 		case RS6000: break; /*TODO*/
 		case SZ_IBM: break; /*TODO*/

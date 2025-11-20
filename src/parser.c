@@ -1,4 +1,4 @@
-/*Copyright (c) 2024 Tristan Wellman*/
+/*Copyright (c) 2022-2025 MinervaWare LLC*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

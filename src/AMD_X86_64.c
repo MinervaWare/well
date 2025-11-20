@@ -1,4 +1,4 @@
-/*Copyright (c) 2024 Tristan Wellman*/
+/*Copyright (c) 2022-2025 MinervaWare LLC*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "cpu.h"
@@ -146,13 +146,13 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 
 	/*Special instructions*/
 	/*Inline - Drops direct asm instructions into the output*/
-	if(!strcmp(ins.instruction, "inline")) 
-		snprintf(outBuf, sizeof(outBuf), "%s", dumpInlineASM(&ins));
+	if(!strcmp(ins.instruction, "inline")) { 
+		snprintf(outBuf, sizeof(outBuf), "\t%s\n", dumpInlineASM(&ins));
 
 	/*
 	 * 1 argument instructions
 	 * */
-	if(args==1) {
+	} else if(args==1) {
 		/*
 		 * Call: call~ printf
 		 * */

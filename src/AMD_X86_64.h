@@ -1,4 +1,4 @@
-/*Copyright (c) 2024 Tristan Wellman*/
+/*Copyright (c) 2022-2025 MinervaWare LLC*/
 #ifndef AMD_X86_64_H
 #define AMD_X86_64_H
 #include "util.h"
