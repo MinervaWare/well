@@ -13,11 +13,9 @@
 int checkRegister(char *reg) {
 	WTRIM(reg);
 	if(reg==NULL||reg[0]=='\0') return 0;
-	char *num = strstr(reg, "r");
-	if(num!=NULL) {
-		num++;
-		if(strlen(num)>1) return 0;
-		int regNum = atoi(num);
+	if(reg[0]=='r'||reg[0]=='f') {
+		if(strlen(reg)>2) return 0;
+		int regNum = (int)reg[1]-48;
 		if(regNum>0&&regNum<9) return 1;
 	}
 	return 0;
@@ -139,7 +137,7 @@ char *getLVTAllocation(Function *func) {
 										 vName, offset); 
 							    break;
 					case FLOAT: snprintf(buf, sizeof(buf),
-									  "\tmovess wl_fl_%s(%%rip), %%xmm7\n"
+									  "\tmovss wl_fl_%s(%%rip), %%xmm7\n"
 									  "\tmovss %%xmm7, -%d(%%rbp)\n",
 									  vName, offset);
 								break;

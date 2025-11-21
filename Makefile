@@ -20,7 +20,7 @@ base: $(OBJS)
 run_test:
 	well tests/helloWorld/helloworld.well -i
 
-vim:
+cvim:
 	mkdir -p ~/.vim/syntax
 	mkdir -p ~/.vim/ftdetect
 	cp vim/syntax/well.vim ~/.vim/syntax/

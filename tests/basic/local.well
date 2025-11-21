@@ -27,5 +27,8 @@
 	move~ sw, r1
 	call~ printf
 
+	~float:fl = 10.0
+	move~ fl, f1 
+
 	return~ 0
 }
