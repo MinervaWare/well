@@ -23,7 +23,7 @@ Wellang is a high-level assembly language. Our goal is to achieve one instructio
 
 This is the list of actively maintained architectures for Wellang. This does not mean fully implemented or finished (reference the note above), it simply means they are being actively developed. 
 
-* [ ] ALPHA
+* [x] ALPHA
 * [x] AMD_X86_64
 * [x] I386
 * [x] ARM_MAC (aarch64 - ARMv8)

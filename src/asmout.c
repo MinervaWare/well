@@ -3,6 +3,7 @@
 #include "asmout.h"
 #include "cpu.h"
 
+#include "ALPHA.h"
 #include "ARM_MAC.h"
 #include "AMD_X86_64.h"
 
@@ -86,7 +87,7 @@ char *createFunctionHeader(char *name) {
 	int bSize = strlen(name)+1024;
 	char *head = calloc(bSize, sizeof(char));
     switch(CPU) {
-				case ALPHA: break; /*TODO*/
+				case ALPHA: /*same as AMD_X86_64*/
 				case AMD_X86_64: snprintf(head, bSize,
                                            "\t.text\n\t.global %s\n%s:\n", name, name);
                                   break;
@@ -213,7 +214,9 @@ void convertFunctions(AsmOut *out) {
 
 			switch(CPU) {
 				/*alpha*/
-				case ALPHA: break; /*TODO*/
+				case ALPHA: asmInstruction = convertInstructionALPHA(out, *curIns);
+							stackAllocation = stackAllocateALPHA();
+							break;
 				/*intel*/
 				case AMD_X86_64:							
 							asmInstruction = convertInstructionAMD_X86_64(out, *curIns);
@@ -268,7 +271,7 @@ void convertFunctions(AsmOut *out) {
 		if(out->parser->functions[i].type==VOID) {
 			char *deallocateStack = NULL;
 			switch(CPU) {
-				case ALPHA: break; /*TODO*/
+				case ALPHA: deallocateStack = stackDeallocateALPHA();break;
 				case AMD_X86_64: deallocateStack = stackDeallocateAMD_X86_64();break;
 				case I386: deallocateStack = stackDeallocateAMD_X86_64();break;
 				case ITANIUM_64: break; /*TODO*/
@@ -299,7 +302,6 @@ void convertFunctions(AsmOut *out) {
 char *getAsmString(char *name, char *value) {
 	char buf[strlen(name)+strlen(value)+1024];
     switch(CPU) {
-		case ALPHA: break; /*TODO*/
 		case AMD_X86_64: snprintf(buf, sizeof(buf),
                            "\t.text\n\t.global wl_str_%s\n.rawwl_str%s:\n\t.asciz %s\n\t"
                            ".data\n\t.align 8\nwl_str_%s:\n\t.quad .rawwl_str%s\n",
@@ -309,7 +311,8 @@ char *getAsmString(char *name, char *value) {
                            ".data\n\t.align 8\nwl_str_%s:\n\t.long .rawwl_str%s\n",
                            name, name, value, name, name);break;
 		case ITANIUM_64: break; /*TODO*/
-		case ARMv8:
+		case ARMv8: /*Same as ARM_MAC*/
+		case ALPHA: /*Same as ARM_MAC*/
 		case ARM_MAC: snprintf(buf, sizeof(buf), "wl_str_%s:\n\t.asciz %s\n",
                            name, value);break;
         case ARMv7: break; /*TODO*/

@@ -1,16 +1,20 @@
-	.section __TEXT,__text
-	.global _main
-	.p2align 2
-_main:
-	sub sp, sp, #32
-	stp x29, x30, [sp, #16]
-	add x29, sp, #16
-	adrp x0,wl_str_text@PAGE
-	add x0, x0, wl_str_text@PAGEOFF
-	bl _printf
-	mov x0, #0
-	ldp x29, x30, [sp, #16]
-	add sp, sp, #32
-	ret
+	.text
+	.global main
+main:
+	ldgp $29, 0($27)
+	lda $30, -16($30)
+	stq $26, 0($30)
+	stq $15, 8($30)
+	bis $31, $30, $15
+	lda $16, wl_str_text
+	jsr $26, printf
+	ldgp $29, 0($26)
+	bis $31, 0, $1
+	mov $1, $0
+	mov $15, $30
+	ldq $26, 0($30)
+	ldq $15, 8($30)
+	lda $30, 16($30)
+	ret $31, ($26), 1
 wl_str_text:
 	.asciz "Hello World!\n"
