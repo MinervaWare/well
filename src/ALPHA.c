@@ -4,8 +4,7 @@
 
 char *stackAllocateALPHA() {
 	char *ret = calloc(1024, sizeof(char));
-	sprintf(ret, "\tldgp $29, 0($27)\n"
-				 "\tlda $30, -16($30)\n"
+	sprintf(ret, "\tlda $30, -16($30)\n"
 				 "\tstq $26, 0($30)\n"
 				 "\tstq $15, 8($30)\n"
 				 "\tbis $31, $30, $15\n");

@@ -1,27 +1,34 @@
-	.section __TEXT,__text
-	.global _print
-	.p2align 2
-_print:
-	sub sp, sp, #16
-	stp x29, x30, [sp, #0]
-	add x29, sp, #0
-	bl _printf
-	ldp x29, x30, [sp, #0]
-	add sp, sp, #16
+	.text
+	.global print
+print:
+	lda $30, -16($30)
+	stq $26, 0($30)
+	stq $15, 8($30)
+	bis $31, $30, $15
+	jsr $26, printf
+	mov $15, $30
+	ldq $26, 0($30)
+	ldq $15, 8($30)
+	lda $30, 16($30)
+	ret $31, ($26), 1
 	ret
-	.section __TEXT,__text
-	.global _main
-	.p2align 2
-_main:
-	sub sp, sp, #16
-	stp x29, x30, [sp, #0]
-	add x29, sp, #0
-	adrp x0,wl_str.text@PAGE
-	add x0, x0, wl_str.text@PAGEOFF
-	bl _print
-	mov x0, #0
-	ldp x29, x30, [sp, #0]
-	add sp, sp, #16
-	ret
-wl_str.text:
+	.text
+	.global main
+main:
+	ldgp $29, 0($27)
+	lda $30, -16($30)
+	stq $26, 0($30)
+	stq $15, 8($30)
+	bis $31, $30, $15
+	lda $16, wl_str_text
+	jsr $26, print
+	ldgp $29, 0($26)
+	bis $31, 0, $1
+	mov $1, $0
+	mov $15, $30
+	ldq $26, 0($30)
+	ldq $15, 8($30)
+	lda $30, 16($30)
+	ret $31, ($26), 1
+wl_str_text:
 	.asciz "Hello World!\n"

@@ -82,6 +82,10 @@ char *getCPUMain() {
 	return ret;
 }
 
+int isEntryPoint(char *func) {
+	return !(strcmp(func, getCPUMain()));
+}
+
 char *createFunctionHeader(char *name) {
 	if(!strcmp(name, "main")) name = getCPUMain();
 	int bSize = strlen(name)+1024;
@@ -107,6 +111,9 @@ char *createFunctionHeader(char *name) {
 				case SPARC: break; /*TODO*/
 				case MIPS: break; /*TODO*/
 	};
+	if(isEntryPoint(name)) {
+		if(CPU==ALPHA) strcat(head, "\tldgp $29, 0($27)\n");
+	}
 	return head;
 }
 
