@@ -63,15 +63,27 @@ char *getCurrentVarALPHA(struct parserData *parser, Instruction *ins, int argSpo
 	return res;
 }
 
+/*
+ * Tri-Argument Instruction with destination on right.
+ * */
+char *triArgInsRDestALPHA(char *ins, Instruction *wins) {
+	int bsize = wins->argLen*128;
+	char *buf = calloc(bsize, sizeof(char));
+	char *dest = mapRegisterALPHA(wins->arguments[0]);
+	char *s2 = mapRegisterALPHA(wins->arguments[1]);
+	snprintf(buf, bsize*sizeof(char), "\t%s %s, %s, %s\n", ins, dest, s2, dest);
+	return buf;
+}
+
 char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 	int args = ins.argLen;
 	int outlen = args*DEFMAXFSIZE;
 	char outBuf[outlen];
-	outBuf[0] = '\0';
+	memset(outBuf, 0, outlen*sizeof(char));
 	int i;
 
 	for(i=0;i<args;i++) WTRIM(ins.arguments[i]);
-
+	
 	/*Special instructions*/
 	/*Inline - Drops direct asm instructions into the output*/
 	if(!strcmp(ins.instruction, "inline")) { 
@@ -98,7 +110,7 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 				char *dealloc = stackDeallocateALPHA();
 				if(checkRegister(ins.arguments[0])) {
 					snprintf(outBuf, sizeof(outBuf), 
-							"\tldgp $29, 0($26)\n\tbis $31, %s, %1\n\tmov $1, $0\n%s",
+							"\tldgp $29, 0($26)\n\tbis $31, %s, $1\n\tmov $1, $0\n%s",
 							reg, dealloc);
 				} else {
 					snprintf(outBuf, sizeof(outBuf),
@@ -106,6 +118,7 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 							ins.arguments[0], dealloc);
 				}
 				free(dealloc);
+				dealloc = NULL;
 			}
 		}
 	} else if(args==2) {
@@ -135,11 +148,66 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 			}
 			snprintf(outBuf, sizeof(outBuf),
 					"\tlda %s, %s\n", val2, val1);
-			if(val1!=NULL) free(val1);
-			if(val2!=NULL) free(val2);
-		}	
-	}
+			if(val1!=NULL) {free(val1);val1=NULL;}
+			if(val2!=NULL) {free(val2);val2=NULL;}
 
+		/*
+		 * Bitwise Instructions (Logical modifications are made with symbol operators)
+		 * */
+
+		/* NOT: not~ r1, r2
+		 * r1 = ~r2
+		 * */
+		} else if(!strcmp(ins.instruction, "not")) {
+			if(ins.arguments[0]!=NULL&&ins.arguments[1]!=NULL) {
+				char *dest = mapRegisterALPHA(ins.arguments[0]);
+				char *src = mapRegisterALPHA(ins.arguments[1]);
+				snprintf(outBuf, sizeof(outBuf), "\tnot %s, %s\n", dest, src);
+			}
+		}	
+	
+	/*
+	 * 3 argument instructions
+	 */
+	} else if(args==3) {
+		/*
+		 * Bitwise Instructions (Logical modifications are made with symbol operators)
+		 * */
+
+
+		/* AND: and~ r1, r2, r3
+		 * r1 = r2&r3
+		 * */
+		if(!strcmp(ins.instruction, "and")) {
+			if(ins.arguments[0]!=NULL&&ins.arguments[1]!=NULL&&
+					ins.arguments[2]!=NULL) {
+				char *dest = mapRegisterALPHA(ins.arguments[0]);
+				char *s1 = mapRegisterALPHA(ins.arguments[1]);
+				char *s2 = mapRegisterALPHA(ins.arguments[2]);
+				if((!strcmp(dest,s1)&&!strcmp(dest,s2))||!strcmp(s1,s2)) {
+					/*If the are the same it's always 1*/
+					/*TODO: I do not believe there is a bitwise or instruction
+					 * for ALPHA: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f98/doc/alpha-guide.pdf*/
+					snprintf(outBuf, sizeof(outBuf), "\tor $31, $1, %s\n", dest);
+				} else {
+					snprintf(outBuf, sizeof(outBuf), "\tand %s, %s, %s\n",
+							s1, s2, dest);
+				} 
+			}
+
+		/*
+		 * Mathematical Instructions
+		 * */
+		/* ADD: add~ r1, r2, r3
+		 * r1 = r2+r3
+		 * */
+		} else if(!strcmp(ins.instruction, "add")) {
+			char *out = triArgInsRDestALPHA("addq", &ins);
+			snprintf(outBuf, sizeof(outBuf), "%s", out);
+			free(out);
+			out = NULL;
+		}
+	}
 	char *ret = calloc(strlen(outBuf)+1, sizeof(char));
     strcpy(ret, outBuf);
 	return ret;

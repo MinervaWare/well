@@ -210,7 +210,7 @@ void convertFunctions(AsmOut *out) {
 			realloc(out->buffers.functions, bufferSize);
 		strcat(out->buffers.functions, header);
 		free(header);
-
+		header = NULL;
 		static int setAllocation = 0;
 		/*instructions*/
 		for(j=0;j<out->parser->functions[i].dataLength;j++) {
@@ -257,7 +257,7 @@ void convertFunctions(AsmOut *out) {
 				if(setAllocation==0) {
 					strcat(out->buffers.functions, stackAllocation);
 					if(LVTAlloc!=NULL) {
-						bufferSize += strlen(LVTAlloc);
+						bufferSize += strlen(LVTAlloc)+1;
 						out->buffers.functions =
 							(char *)realloc(out->buffers.functions, bufferSize);
 						strcat(out->buffers.functions, LVTAlloc);
@@ -268,10 +268,11 @@ void convertFunctions(AsmOut *out) {
 				free(asmInstruction);
 				asmInstruction = NULL;
             }
-			free(stackAllocation);
-			if(asmInstruction!=NULL) free(asmInstruction);
+			free(stackAllocation);stackAllocation=NULL;
+			if(asmInstruction!=NULL) {free(asmInstruction);asmInstruction=NULL;}
 		}
 		free(LVTAlloc);
+		LVTAlloc = NULL;
 		setAllocation = 0;
 
 		/*Check for void function type so we can return correctly*/
@@ -297,6 +298,7 @@ void convertFunctions(AsmOut *out) {
 			out->buffers.functions =
 				(char *)realloc(out->buffers.functions, bufferSize);
 			strcat(out->buffers.functions, deallocateStack);
+			if(deallocateStack!=NULL) {free(deallocateStack);deallocateStack = NULL;}
 		}
 
 	}
