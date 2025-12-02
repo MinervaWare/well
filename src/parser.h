@@ -44,6 +44,7 @@ enum varTypes {
  * you should re-think what you are doing
  * */
 #define MAXSCOPES 100000
+#define SUBSCOPESTEP 5
 
 #define MAXFUNCTIONS 10000
 #define DEFMAXFSIZE 1024 /*default max amount of lines for a function*/
@@ -82,13 +83,22 @@ typedef struct {
 } LVT; /*Local Variable Table*/
 
 typedef struct {
+	/*Name/ID will be stored in scope*/
+	Scope scope;
+	Instruction *instructions;
+	char **data;
+	int totalData, dataCap;
+} FuncSubScopeData;
+
+typedef struct {
 	enum varTypes type;
 	char *funName;
-	char **data; /*All the code inside the function scope*/
+	char **data; 
 	int dataLength;
     int capacity;
 	Scope scope;
-	/*needs malloced to amount of lines in function*/
+	FuncSubScopeData *subScopes;
+	int totalScopes, scopeCap;
 	Instruction *instructions;
 	LVT *lvt;
 } Function;

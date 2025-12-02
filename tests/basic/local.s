@@ -23,8 +23,10 @@ main:
 	movq $2, -24(%rbp)
 	movq wl_str_sw(%rip), %r10
 	movq %r10, -32(%rbp)
+	movq wl_str_fstr(%rip), %r10
+	movq %r10, -40(%rbp)
 	movss wl_fl_fl(%rip), %xmm7
-	movss %xmm7, -36(%rbp)
+	movss %xmm7, -44(%rbp)
 	movq -8(%rbp),%rdi
 	call printf
 	movq -16(%rbp),%rdi
@@ -34,7 +36,9 @@ main:
 	movq %rdi,%rsi
 	movq -32(%rbp),%rdi
 	call printf
-	movq -36(%rbp),%xmm0
+	movq -40(%rbp),%rdi
+	movq -44(%rbp),%xmm1
+	call printf
 	movq %rdi, %rax
 	addq $32, %rsp
 	popq %rbp
@@ -55,6 +59,14 @@ wl_str_testLocal:
 	.align 8
 wl_str_sw:
 	.quad .rawwl_strsw
+	.text
+	.global wl_str_fstr
+.rawwl_strfstr:
+	.asciz "f: %f\n"
+	.data
+	.align 8
+wl_str_fstr:
+	.quad .rawwl_strfstr
 
 	.global wl_fl_fl
 	.p2align 2,0x0

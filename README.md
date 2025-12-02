@@ -11,9 +11,10 @@
   </p>
 </div>
 
-# NOTE
 
-* Wellang is in an extremely early state with pending syntax changes and the development of the compiler. MAKE SURE you keep wellang up to date!
+> [!WARNING]
+> Wellang is in an extremely early state with pending syntax changes and the development of the compiler. MAKE SURE you keep wellang up to date!
+
 
 # About
 

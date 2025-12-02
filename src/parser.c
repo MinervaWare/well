@@ -240,7 +240,7 @@ void getVariables(struct parserData *parser) {
 					while(bytes[strlen(bytes)-1]==' ') bytes[strlen(bytes)-1] = '\0';
 					
 				}
-				free(tmp);
+				free(tmp);tmp=NULL;
 			}
 		}
 	}
@@ -443,7 +443,7 @@ void getInstructionArguments(Instruction *ins) {
 				arg = strtok(NULL, ",");
 			}
 		}
-		free(backup);
+		free(backup);backup=NULL;
 	}
 	if(ins->argLen==0) ins->arguments = NULL;
 }
@@ -461,7 +461,7 @@ void disectInstructionName(Instruction *ins) {
             strcpy(ins->instruction, name);
         }
 
-		free(backup);
+		free(backup);backup=NULL;
 	}
 }
 
@@ -486,7 +486,7 @@ int checkFuncForExternScope(int lineNum, struct parserData *parser) {
 	int i;
 	for(i=0;i<MAXSCOPES;i++) {
 		if(parser->scopes[i].scopeName==NULL) break;
-		if(parser->scopes[i].lineNum==lineNum&&
+if(parser->scopes[i].lineNum==lineNum&&
 				(parser->scopes[i].scopeType==IFSTATE ||
 				parser->scopes[i].scopeType==LOOP)) return 1;	
 	}
@@ -503,39 +503,91 @@ int checkBrackFrom(int lineFrom, int lineTo, struct parserData *parser) {
 	return 0;
 }
 
+void addFunctionSubScopeData(Function *func, char *data) {
+	if(!func||!data) return;
+	int *sspos = &func->totalScopes;
+	FuncSubScopeData *scope = &func->subScopes[*sspos];
+	if(scope->totalData>=scope->dataCap) {
+		scope->dataCap += SUBSCOPESTEP;
+		scope->data = (char **)realloc(scope->data, 
+				scope->dataCap*sizeof(char *));
+		scope->instructions = (Instruction *)realloc(scope->instructions, 
+				scope->dataCap*sizeof(Instruction));
+	}
+	scope->data[scope->totalData] = calloc(strlen(data)+1, sizeof(char));
+	strcpy(scope->data[scope->totalData], data);
+	scope->totalData++;
+}
+
+void startFunctionSubScope(Function *func, char *data, int lineNum) {
+	if(!func||!data) return;
+	if(func->totalScopes>=func->scopeCap) {
+		func->scopeCap += SUBSCOPESTEP;
+		func->subScopes = (FuncSubScopeData *)realloc(func->subScopes,
+				func->scopeCap*sizeof(FuncSubScopeData));
+	}
+	func->subScopes[func->totalScopes].scope.scopeType = getScopeType(data);
+	func->subScopes[func->totalScopes].scope.lineNum = lineNum;
+	char buf[1024];
+	switch(func->subScopes[func->totalScopes].scope.scopeType) {
+		case IFSTATE: snprintf(buf, sizeof(buf), "wl_is_%d", func->totalScopes); 
+					  break;
+		case LOOP: snprintf(buf, sizeof(buf), "wl_lop_%d", func->totalScopes);
+				   break;
+		default: break;
+	};
+	func->subScopes[func->totalScopes].scope.scopeName =
+		calloc(strlen(buf), sizeof(char));
+	strcpy(func->subScopes[func->totalScopes].scope.scopeName, buf);
+	func->subScopes[func->totalScopes].totalData = 0;
+	func->subScopes[func->totalScopes].dataCap = SUBSCOPESTEP;
+	func->subScopes[func->totalScopes].data = calloc(SUBSCOPESTEP, sizeof(char *));
+	func->subScopes[func->totalScopes].instructions = 
+		calloc(SUBSCOPESTEP, sizeof(Instruction));
+}
+
+void endFunctionSubScope(Function *func) {
+	func->totalScopes++;
+}
+
 /* Get all lines from a function scope into function buffer */
 void buffToFunc(Function *func, struct parserData *parser) {
-	/*NOTE: func data buffer must already be allocated, I aint checking it!*/
 	int i = func->scope.lineNum+1, j=0;
-	int scopeCarry=0; /*amount of scopes inside the function I.E. loops*/
+	int scopeCarry=0;
 	func->dataLength = 0;
 	for(;i<parser->bufferSize;i++) {
+		int pos = (i-(func->scope.lineNum+1))-j;
         if(parser->fileBuffer[i]==NULL||parser->fileBuffer[i][0]=='\n') {
 			j++;
 			continue;
 		}
-		if(checkFuncForExternScope(i, parser)) scopeCarry++;
-		if(strstr(parser->fileBuffer[i], "}")) {
-
-			/*see if we are getting played*/
-			if(scopeCarry==0) {
-				if(!checkBrackFrom(i+1, 
-					getNextScope(func->scope, parser).lineNum, parser)) {
-					scopeCarry--;
-					break;
-				}
-				scopeCarry--;
-			}
-			if(scopeCarry<0) break;
+		if(checkFuncForExternScope(i, parser)) {
+			startFunctionSubScope(func, parser->fileBuffer[i], i);
+			scopeCarry++;
+			/*throw the if statement into the function data*/
+			func->data[pos] = calloc(strlen(parser->fileBuffer[i])+1, sizeof(char));
+			strcpy(func->data[pos], parser->fileBuffer[i]);
+			func->dataLength++;
 		}
-		int pos = (i-(func->scope.lineNum+1))-j;
+		if(strstr(parser->fileBuffer[i], "}")) {
+			if(scopeCarry>0) endFunctionSubScope(func);
+			scopeCarry--;
+			if(scopeCarry<0) break;
+			/*-1 would be main*/
+			if(scopeCarry==0) {j++;continue;} 
+		}
         if(pos>=func->capacity) {
           	func->capacity+=DEFAULTINSARGSIZE/2;
           	func->data = (char **)realloc(func->data, sizeof(char *)*func->capacity);
         }
-        func->data[pos] = calloc(strlen(parser->fileBuffer[i])+1, sizeof(char));
-		strcpy(func->data[pos], parser->fileBuffer[i]);
-		func->dataLength++;
+		if(scopeCarry>0) {
+			addFunctionSubScopeData(func, parser->fileBuffer[i]);
+			j++;
+		} else {
+			func->data[pos] = calloc(strlen(parser->fileBuffer[i])+1, sizeof(char));
+			strcpy(func->data[pos], parser->fileBuffer[i]);
+			func->dataLength++;
+		}
 	}
 	if(scopeCarry>0) {
 		WLOG_WERROR(WERROR_MISSING_BRACKET, 
@@ -546,29 +598,51 @@ void buffToFunc(Function *func, struct parserData *parser) {
 }
 
 void parseFunctionInstructions(Function *func) {
-	int i,j=0;
+	int i,j=0,k=0;
 	for(i=0;i<func->dataLength;i++) {
 		if(func->data[i]==NULL) continue;
 		if(checkImportantType(func->data[i])) {
-			/*Get if or loop statement data and convert*/
+			
 			continue;
-		} else {
-			char *cpy = calloc(strlen(func->data[i])+1, sizeof(char));
-			strcpy(cpy, func->data[i]);
-			/*memset(func->instructions[i], 0, sizeof(Instruction));*/
-			func->instructions[j].line = NULL;
-			func->instructions[j].line = calloc(strlen(func->data[i])+1, sizeof(char));
-			strcpy(func->instructions[j].line, func->data[i]);
-			func->instructions[j].instruction = NULL;
-			func->instructions[j].arguments = NULL;
-			func->instructions[j].errData.lineNum = func->scope.lineNum+j;
-			func->instructions[j].errData.function = calloc(strlen(func->funName)+1, sizeof(char));
-			strcpy(func->instructions[j].errData.function, func->funName);
-			parseInstruction(cpy,
-					&func->instructions[j]);
-			free(cpy);
-			func->instructions[j].lineNum = func->scope.lineNum+i;
-			j++;
+		}
+		char *cpy = calloc(strlen(func->data[i])+1, sizeof(char));
+		strcpy(cpy, func->data[i]);
+		/*memset(func->instructions[i], 0, sizeof(Instruction));*/
+		func->instructions[j].line = calloc(strlen(func->data[i])+1, sizeof(char));
+		strcpy(func->instructions[j].line, func->data[i]);
+		func->instructions[j].instruction = NULL;
+		func->instructions[j].arguments = NULL;
+		func->instructions[j].errData.lineNum = func->scope.lineNum+j;
+		func->instructions[j].errData.function = calloc(strlen(func->funName)+1, 
+				sizeof(char));
+		strcpy(func->instructions[j].errData.function, func->funName);
+		parseInstruction(cpy,
+				&func->instructions[j]);
+		free(cpy);cpy=NULL;
+		func->instructions[j].lineNum = func->scope.lineNum+i;
+		j++;
+	}
+	/*Parse subscope instructions*/
+	for(i=0;i<func->totalScopes;i++) {
+		FuncSubScopeData *scope = &func->subScopes[i];
+		if(!scope||!scope->data) continue;
+		for(j=0;j<scope->totalData;j++) {
+			if(checkImportantType(scope->data[j])) continue;
+			char *cpy = calloc(strlen(scope->data[j])+1, sizeof(char));
+			strcpy(cpy, scope->data[j]);
+			scope->instructions[k].lineNum = scope->scope.lineNum+k;
+			scope->instructions[k].line = calloc(strlen(scope->data[j])+1,
+					sizeof(char));
+			strcpy(scope->instructions[k].line, scope->data[j]);
+			scope->instructions[k].instruction = NULL;
+			scope->instructions[k].arguments = NULL;
+			scope->instructions[k].errData.lineNum = scope->scope.lineNum+k;
+			scope->instructions[k].errData.function = 
+				calloc(strlen(func->funName)+1, sizeof(char));
+			strcpy(scope->instructions[k].errData.function, func->funName);
+			parseInstruction(cpy, &scope->instructions[k]);
+			free(cpy);cpy=NULL;
+			k++;
 		}
 	}
 }
@@ -620,6 +694,9 @@ void getFunctionData(struct parserData *parser) {
 			f.funName = calloc(strlen(s->scopeName)+1, sizeof(char));
 			strcpy(f.funName, s->scopeName);
 			f.scope = *s;
+			f.subScopes = calloc(SUBSCOPESTEP, sizeof(FuncSubScopeData));
+			f.totalScopes = 0;
+			f.scopeCap = SUBSCOPESTEP;
 
 			f.lvt = calloc(1, sizeof(LVT));
 			f.lvt->variables = NULL;
@@ -781,9 +858,9 @@ void getIncludedFiles(struct parserData *parser) {
 					initAsmOut(p, output);
 					convertToAsm(output);
 					freeAsm(output);
-					free(data);
-					free(p);
-					free(output);
+					free(data);data=NULL;
+					free(p);p=NULL;
+					free(output);output=NULL;
 				}
 			} else {
 				WLOG_WERROR(WERROR_EXTERN_NOVALUE,

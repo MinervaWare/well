@@ -50,8 +50,14 @@ char *mapRegisterAMD_X86_64(char *reg) {
         	case R8_: return "r8";
         	case R9_: return "r9";
         	case RAX: return "rax";
-        	case XMM0: return "xmm0";
         	case AMD64SP: return "sp";
+        	case XMM0: return "xmm0";
+        	case XMM1: return "xmm1";
+        	case XMM2: return "xmm2";
+        	case XMM3: return "xmm3";
+        	case XMM4: return "xmm4";
+        	case XMM5: return "xmm5";
+        	case XMM6: return "xmm6";
     	};
 	} else if(CPU==I386) {
     	switch(regNum) {
@@ -62,8 +68,14 @@ char *mapRegisterAMD_X86_64(char *reg) {
         	case R8_: return "r8";
         	case R9_: return "r9";
         	case RAX: return "eax";
-        	case XMM0: return "xmm0";
         	case AMD64SP: return "sp";
+        	case XMM0: return "xmm0";
+        	case XMM1: return "xmm1";
+        	case XMM2: return "xmm2";
+        	case XMM3: return "xmm3";
+        	case XMM4: return "xmm4";
+        	case XMM5: return "xmm5";
+        	case XMM6: return "xmm6";
     	};
 	}
     return NULL;

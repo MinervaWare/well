@@ -1,0 +1,10 @@
+~int:main {
+	~string:test = "I am the Walrus: %d\n"
+	~int:i = 10
+	move~ i, r2
+	~if r2 == 10 {
+		move~ test, r1
+		call~ printf
+	}
+	return~ 0
+}

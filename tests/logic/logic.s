@@ -3,7 +3,7 @@
 logic:
 	pushq %rbp
 	movq %rsp, %rbp
-	subq $16, %rsp
+	subq $32, %rsp
 	movq wl_int_a(%rip),%rdi
 	movq %rdi, %rsi
 	notq %rsi
@@ -46,7 +46,7 @@ logic:
 	movq %rdx,%rsi
 	movq wl_str_xtest(%rip),%rdi
 	call printf
-	addq $16, %rsp
+	addq $32, %rsp
 	popq %rbp
 	ret
 	.text
@@ -54,7 +54,7 @@ logic:
 math:
 	pushq %rbp
 	movq %rsp, %rbp
-	subq $16, %rsp
+	subq $32, %rsp
 	movq wl_int_a(%rip),%rdi
 	movq wl_int_b(%rip),%rsi
 	movq %rdi, %rdx
@@ -94,7 +94,7 @@ math:
 	movq %rdx,%rsi
 	movq wl_str_motest(%rip),%rdi
 	call printf
-	addq $16, %rsp
+	addq $32, %rsp
 	popq %rbp
 	ret
 	.text
@@ -102,13 +102,13 @@ math:
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	subq $16, %rsp
+	subq $32, %rsp
 	movq wl_str_hello(%rip),%rdi
 	call printf
 	call logic
 	call math
 	movq %rdi, %rax
-	addq $16, %rsp
+	addq $32, %rsp
 	popq %rbp
 	ret
 	.text

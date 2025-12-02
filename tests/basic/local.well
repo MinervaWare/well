@@ -27,8 +27,11 @@
 	move~ sw, r1
 	call~ printf
 
+	~string:fstr = "f: %f\n"
 	~float:fl = 10.0
-	move~ fl, f1 
+	move~ fstr, r1
+	move~ fl, f2 
+	call~ printf
 
 	return~ 0
 }

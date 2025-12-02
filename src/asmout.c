@@ -196,6 +196,49 @@ char *getLVTAllocation(Function *func) {
 	return res;
 }
 
+char *getSubScopeHeader(FuncSubScopeData *subScope) {
+	int len = strlen(subScope->scope.scopeName)+1024;
+
+}
+
+char *convertFunctionSubScopes(AsmOut *out, Function *func) {
+	int bufferSize = 1;
+	char *res = calloc(bufferSize, sizeof(char));
+	memset(res, 0, bufferSize);
+	int i,j;
+	for(i=0;i<func->totalScopes;i++) {
+		for(j=0;j<func->subScopes[i].totalData;j++) {
+			Instruction *curIns = &func->subScopes[i].instructions[j];
+			char *asmInstruction = NULL;
+			switch(CPU) {
+				case ALPHA: asmInstruction = 
+								convertInstructionALPHA(out, *curIns);
+							break;
+				/*The x86_64 code also conducts 32-bit*/
+				case I386:
+				case AMD_X86_64:							
+							asmInstruction = 
+								convertInstructionAMD_X86_64(out, *curIns);
+							break;
+				case ITANIUM_64: break; /*TODO*/
+				case ARMv8:
+				case ARM_MAC: 
+							asmInstruction = 
+								convertInstructionARM_MAC(out, *curIns);
+							break;
+				case ARMv7: break; /*TODO*/
+				case POWERPC: break; /*TODO*/
+				case RS6000: break; /*TODO*/
+				case SZ_IBM: break; /*TODO*/
+				case SPARC: break; /*TODO*/
+				case MIPS: break; /*TODO*/
+			};
+			
+		}	
+	}
+	return res;
+}
+
 void convertFunctions(AsmOut *out) {
 	out->buffers.functions = calloc(1, sizeof(char));
 
@@ -209,8 +252,8 @@ void convertFunctions(AsmOut *out) {
 		out->buffers.functions =
 			realloc(out->buffers.functions, bufferSize);
 		strcat(out->buffers.functions, header);
-		free(header);
-		header = NULL;
+		free(header);header = NULL;
+
 		static int setAllocation = 0;
 		/*instructions*/
 		for(j=0;j<out->parser->functions[i].dataLength;j++) {
@@ -220,32 +263,25 @@ void convertFunctions(AsmOut *out) {
 			char *stackAllocation = NULL;
 
 			switch(CPU) {
-				/*alpha*/
 				case ALPHA: asmInstruction = convertInstructionALPHA(out, *curIns);
 							stackAllocation = stackAllocateALPHA();
 							break;
-				/*intel*/
+				/*The x86_64 code also conducts 32-bit*/
+				case I386:
 				case AMD_X86_64:							
 							asmInstruction = convertInstructionAMD_X86_64(out, *curIns);
                             stackAllocation = stackAllocateAMD_X86_64();
 							break;
-				/*The x86_64 code checks for 32-bit and switches.*/
-				case I386: 	asmInstruction = convertInstructionAMD_X86_64(out, *curIns);
-                            stackAllocation = stackAllocateAMD_X86_64();
-							break;
 				case ITANIUM_64: break; /*TODO*/
-				/*ARM*/
 				case ARMv8:
 				case ARM_MAC: 
 							asmInstruction = convertInstructionARM_MAC(out, *curIns);
 							stackAllocation = stackAllocateARM_MAC();
 							break;
 				case ARMv7: break; /*TODO*/
-				/*IBM*/
 				case POWERPC: break; /*TODO*/
 				case RS6000: break; /*TODO*/
 				case SZ_IBM: break; /*TODO*/
-				/*SUN*/
 				case SPARC: break; /*TODO*/
 				case MIPS: break; /*TODO*/
 			};
@@ -300,7 +336,16 @@ void convertFunctions(AsmOut *out) {
 			strcat(out->buffers.functions, deallocateStack);
 			if(deallocateStack!=NULL) {free(deallocateStack);deallocateStack = NULL;}
 		}
-
+		/*Function sub-scopes*/
+		char *subScopeOut = 
+			convertFunctionSubScopes(out, &out->parser->functions[i]);
+		if(subScopeOut!=NULL) {
+			bufferSize+=strlen(subScopeOut);
+			out->buffers.functions =
+				(char *)realloc(out->buffers.functions, bufferSize);
+			strcat(out->buffers.functions, subScopeOut);
+			free(subScopeOut);subScopeOut = NULL;
+		}
 	}
 }
 
