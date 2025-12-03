@@ -68,6 +68,7 @@ static enum cpuType CPU =
 		case RS6000: str="RS/6000";break; \
 		case SPARC: str="SPARC";break; \
 		case SZ_IBM: str="System/370-90";break; \
-		case MIPS: str="MIPS";break;};
+		case MIPS: str="MIPS";break; \
+		case HPPA: str="HPPA";break;};
 
 #endif

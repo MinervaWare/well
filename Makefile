@@ -1,5 +1,6 @@
 CC= gcc
-CFLAGS= -g -O2 -std=c89 -Iinclude
+CFLAGS= -g -O2 -std=c89 -Iinclude -Wall -Wframe-larger-than=2048 -Wimplicit-fallthrough=5 -Wno-implicit-function-declaration -Wno-unused-variable -Wno-unused-result 
+CFLAGS_REL = -O2 -std=c89 -Iinclude -fomit-frame-pointer -fconserve-stack -Wall -Wframe-larger-than=2048 -Wimplicit-fallthrough=5 -Wno-implicit-function-declaration -Wno-unused-variable -Wno-unused-result
 
 SRCS:= $(wildcard src/*.c) \
 	   $(wildcard include/*.c)
@@ -16,6 +17,9 @@ all: base
 
 base: $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o $(BIN)
+
+release: $(OBJS)
+	$(CC) $(CFLAGS_REL) $(OBJS) -o $(BIN)
 
 run_test:
 	well tests/helloWorld/helloworld.well -i

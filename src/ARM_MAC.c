@@ -118,7 +118,7 @@ char *ARM_MACgetCurrentVar(struct parserData *parser, Instruction *ins, int argS
 char *ARM_MACgetMoveInstructions(struct parserData *parser, Instruction *ins, 
 		char *val1, char *val2) {
 	char *res = NULL;
-	char outBuf[2048];
+	char outBuf[1024];
 	Variable *var = getVarFrom(parser, ins->arguments[0]);
 	if(var) {
 		if(var->varName!=NULL) {

@@ -259,11 +259,12 @@ Variable *queryLocalVariable(struct parserData *parser,
 			if(lineNum>func->scope.lineNum&&
 					lineNum<func2->scope.lineNum) break;
 		}
-	} else if(parser->totalFunctions>0) {
+	} else if(parser->totalFunctions==2) {
 		if(lineNum>parser->functions[1].scope.lineNum)
 			func = &parser->functions[1];
 		else func = &parser->functions[0];
-	}
+	} else func = &parser->functons[0];
+	if(func==NULL) return res;
 	for(i=0;i<func->lvt->totalVariables;i++) {
 		if(!strcmp(var,func->lvt->variables[i].varName))
 			res = &func->lvt->variables[i];
@@ -383,30 +384,6 @@ void buildFunctionLVT(Function *func) {
 /* * * * *
  * Instruction related functions.
  * * * * */
-Instruction instructionDup(const Instruction *src) {
-	Instruction ret;
-	memset(&ret, 0, sizeof(Instruction));
-
-	ret.argLen = src->argLen;
-	ret.capacity = src->capacity;
-	if(src->line!=NULL) {ret.line = calloc(strlen(src->line)+1,sizeof(char));
-		strcpy(ret.line,src->line);}
-	if(src->instruction!=NULL) {ret.instruction = calloc(strlen(src->instruction)+1,sizeof(char));
-		strcpy(ret.instruction, src->instruction);}
-
-	if(src->argLen>0&&src->arguments!=NULL) {
-		ret.arguments = calloc(src->capacity>0 ? src->capacity : DEFAULTINSARGSIZE, 
-				sizeof(char *));
-		int i;
-		for(i=0;i<src->argLen;i++) {
-			if(src->arguments[i]!=NULL) 
-				ret.arguments[i] = calloc(strlen(src->arguments[i])+1,sizeof(char));
-				strcpy(ret.arguments[i], src->arguments[i]);
-		}
-	}
-	return ret;
-}
-
 void appendInsArgs(Instruction *ins, char *arg) {
 	while(arg[0]==' ') arg++;
     while(arg[strlen(arg)-1]=='\n'||
@@ -905,17 +882,20 @@ struct parserData *initParser(wData *data) {
 	gPData->fileBuffer = calloc(2048, sizeof(char *));
 
 	/*Get all the file data into the file buffer*/
-	char line[2048];
+	char *line = calloc(2048, sizeof(char));
 	int i, mul=1;
-	for(i=0;fgets(line, sizeof(line), gPData->fData->main)!=NULL;i++) { 
+	for(i=0;fgets(line, sizeof(char)*2048, gPData->fData->main)!=NULL;i++) { 
 		if(i>=2048*mul) {
 			gPData->fileBuffer = (char **)realloc(gPData->fileBuffer,
 					sizeof(char *)*(2048*mul));
 			mul++;
 		} 
 
-		gPData->fileBuffer[i] = calloc(ARRLEN(line)+1, sizeof(char));
+		gPData->fileBuffer[i] = calloc(strlen(line)+1, sizeof(char));
 		strcpy(gPData->fileBuffer[i], line);
+
+		free(line); line = NULL;
+		line = calloc(2048, sizeof(char));
 	}
 	gPData->bufferSize = i;
 

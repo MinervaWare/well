@@ -144,7 +144,6 @@ struct parserData {
 Variable *getVarFrom(struct parserData *parser, char *name);
 Variable *queryLocalVariable(struct parserData *parser, 
 		int lineNum, char *var);
-Instruction instructionDup(const Instruction *src);
 
 void parseProgram(struct parserData *parser);
 struct parserData *initParser(wData *data);

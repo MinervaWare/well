@@ -78,6 +78,7 @@ char *getCPUMain() {
 		case SZ_IBM: strcpy(ret, "main"); break;
 		case SPARC: strcpy(ret, "main"); break;
 		case MIPS: strcpy(ret, "main"); break;
+		case HPPA: strcpy(ret, "main"); break;
 	}
 	return ret;
 }
@@ -110,6 +111,7 @@ char *createFunctionHeader(char *name) {
 				case SZ_IBM: break; /*TODO*/
 				case SPARC: break; /*TODO*/
 				case MIPS: break; /*TODO*/
+				case HPPA: break; /*TODO*/
 	};
 	if(isEntryPoint(name)) {
 		if(CPU==ALPHA) strcat(head, "\tldgp $29, 0($27)\n");
@@ -198,7 +200,9 @@ char *getLVTAllocation(Function *func) {
 
 char *getSubScopeHeader(FuncSubScopeData *subScope) {
 	int len = strlen(subScope->scope.scopeName)+1024;
+	char *res = NULL;
 
+	return res;
 }
 
 char *convertFunctionSubScopes(AsmOut *out, Function *func) {
@@ -207,6 +211,13 @@ char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 	memset(res, 0, bufferSize);
 	int i,j;
 	for(i=0;i<func->totalScopes;i++) {
+		char *header = getSubScopeHeader(&func->subScopes[i]);
+		if(header!=NULL) {
+			bufferSize += strlen(header)+1;
+			res = (char *)realloc(res, sizeof(char)*bufferSize);
+			strcat(res, header);
+			free(header); header = NULL;
+		}
 		for(j=0;j<func->subScopes[i].totalData;j++) {
 			Instruction *curIns = &func->subScopes[i].instructions[j];
 			char *asmInstruction = NULL;
@@ -232,10 +243,17 @@ char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 				case SZ_IBM: break; /*TODO*/
 				case SPARC: break; /*TODO*/
 				case MIPS: break; /*TODO*/
+				case HPPA: break; /*TODO*/
 			};
-			
+			if(asmInstruction!=NULL) {
+				bufferSize += strlen(asmInstruction)+1;	
+				res = (char *)realloc(res, sizeof(char)*bufferSize);
+				strcat(res, asmInstruction);
+				free(asmInstruction);
+			}
 		}	
 	}
+	printf("%s\n", res);
 	return res;
 }
 
@@ -284,6 +302,7 @@ void convertFunctions(AsmOut *out) {
 				case SZ_IBM: break; /*TODO*/
 				case SPARC: break; /*TODO*/
 				case MIPS: break; /*TODO*/
+				case HPPA: break; /*TODO*/
 			};
 			if(asmInstruction!=NULL&&strcmp(asmInstruction, "")) {
 				bufferSize+=strlen(asmInstruction)+
@@ -327,6 +346,7 @@ void convertFunctions(AsmOut *out) {
 				case SZ_IBM: break; /*TODO*/
 				case SPARC: break; /*TODO*/
 				case MIPS: break; /*TODO*/
+				case HPPA: break; /*TODO*/
 			};
 			if(deallocateStack!=NULL) strcat(deallocateStack, "\tret\n");
 			else deallocateStack = "\tret\n";
@@ -375,6 +395,7 @@ char *getAsmString(char *name, char *value) {
 		case SZ_IBM: break; /*TODO*/
 		case SPARC: break; /*TODO*/
 		case MIPS: break; /*TODO*/
+		case HPPA: break; /*TODO*/
 	};
 	char *ret = calloc(strlen(buf)+1, sizeof(char));
 	strcpy(ret, buf);

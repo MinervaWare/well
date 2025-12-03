@@ -246,18 +246,21 @@ void compileFile(wData *data) {
 		}
 		/*link objs*/
 		char **linkArgs = calloc(ARRLEN(args)+data->includeSize+data->flagLen+1, sizeof(char*));
+		int linkArgLen = 0;
 		linkArgs[0] = "gcc";
 		linkArgs[1] = data->outputFile;
 		fileDirect = strtok(fileDirect, ".");
 		strcat(fileDirect, ".o");
 		linkArgs[2] = calloc(strlen(fileDirect)+1, sizeof(char *));
         strcpy(linkArgs[2], fileDirect);
+		linkArgLen = 3;
 		for(i=0;i<data->includeSize;i++) {
 			char *curInclude = strtok(data->includedFiles[i], ".");
 			strcat(curInclude, ".o");
 			linkArgs[i+3] = calloc(strlen(curInclude)+1, sizeof(char *));
             strcpy(linkArgs[i+3], curInclude);
 		}
+		linkArgLen += i;
 		/*Get C flags*/
 		int l;
 		for(l=0;l<data->flagLen;l++) {
@@ -265,11 +268,11 @@ void compileFile(wData *data) {
             strcpy(linkArgs[l+data->includeSize+3], data->flags[l]);
         }
 		linkArgs[l+data->includeSize+4] = NULL;
-		
+		linkArgLen += l;	
 		/*trim up linkArgs*/
-		for(i=0;i<ARRLEN(linkArgs)-1;i++) {
+		for(i=0;i<linkArgLen;i++) {
 			if((linkArgs[i]==NULL||!strcmp(linkArgs[i],""))
-					&&i+1<ARRLEN(linkArgs)-1) {
+					&&i+1<linkArgLen) {
 				linkArgs[i] = linkArgs[i+1];
 				linkArgs[i+1] = NULL;
 				if(linkArgs[i]==NULL) linkArgs[i] = "";
