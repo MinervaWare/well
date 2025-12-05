@@ -32,6 +32,57 @@ char *stackDeallocateAMD_X86_64() {
 	return NULL;
 }
 
+void AMD_X86_64GetLVAlloc(char *buf, size_t bSize, Variable *var) {
+	char *vName = var->varName;
+	char *value = var->value;
+	int offset = var->offset;
+	if(CPU==AMD_X86_64) {
+		switch(var->type) {
+			case INT: snprintf(buf, bSize,
+							  "\tmovq $%s, -%d(%%rbp)\n",
+							  value, offset);
+					  break;
+			case CHAR: snprintf(buf, bSize,
+							   "\tmovq $%d, -%d(%%rbp)\n",
+							   (int)value[0], offset);
+					   break;
+			case STRING: snprintf(buf, bSize,
+								 "\tmovq wl_str_%s(%%rip), %%r10\n"
+								 "\tmovq %%r10, -%d(%%rbp)\n",
+								 vName, offset); 
+						break;
+			case FLOAT: snprintf(buf, bSize,
+							  "\tmovss wl_fl_%s(%%rip), %%xmm7\n"
+							  "\tmovss %%xmm7, -%d(%%rbp)\n",
+							  vName, offset);
+						break;
+			case VOID: break;
+			case ZERO: break;
+		};
+	} else if(CPU==I386) {
+		switch(var->type) {
+			case INT: snprintf(buf, bSize,
+							  "\tmovl $%s, -%d(%%ebp)\n",
+							  value, offset);
+					  break;
+			case CHAR: snprintf(buf, bSize,
+							   "\tmovl $%d, -%d(%%ebp)\n",
+							   (int)value[0], offset);
+					   break;
+			case STRING: snprintf(buf, bSize,
+								 "\tmovl wl_str_%s, -%d(%%ebp)\n",
+								 vName, offset); 
+						break;
+			case FLOAT: snprintf(buf, bSize,
+							  "\tflds wl_fl_%s\n\tfstps -%d(%%esp)\n",
+							  vName, offset);
+						break;
+			case VOID: break;
+			case ZERO: break;
+		};
+	}
+}
+
 char *initLocalVariables(Function *func) {
 	if(func==NULL) return NULL;
 	char *res = NULL;
@@ -103,9 +154,12 @@ char *getCurrentVar(struct parserData *parser, Instruction *ins, int argSpot) {
 		};
 		if(CPU==AMD_X86_64) strcat(asmVName, "(%rip)");
 	} else {
+		char *bp = NULL;
+		if(CPU==AMD_X86_64) bp = "rbp";
+		else bp = "ebp";
 		v = NULL;
 		v = queryLocalVariable(parser, ins->lineNum, ins->arguments[argSpot]);
-		if(v!=NULL) snprintf(asmVName, sizeof(asmVName), "-%d(%%rbp)", v->offset);
+		if(v!=NULL) snprintf(asmVName, sizeof(asmVName), "-%d(%%%s)", v->offset, bp);
 		else {
 			snprintf(asmVName, sizeof(asmVName), "_%s", ins->arguments[argSpot]);
 			if(CPU==AMD_X86_64) strcat(asmVName, "(%rip)");
@@ -151,7 +205,7 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 	int args = ins.argLen;
 	int outlen = args*DEFMAXFSIZE;
 	char outBuf[outlen];
-	outBuf[0] = '\0';
+	memset(outBuf, 0, outlen*sizeof(char));
 	int i;
 
 	for(i=0;i<args;i++) WTRIM(ins.arguments[i]);
@@ -180,12 +234,18 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 				if(strlen(ins.arguments[0])==0) ins.arguments[0] = "0";
 				else reg = mapRegisterAMD_X86_64(ins.arguments[0]);
 				char *dealloc = stackDeallocateAMD_X86_64();
+				
 				if(reg!=NULL) {
-					snprintf(outBuf, sizeof(outBuf), "\tmovq %%%s, %%rax\n%s\tret\n",
-							reg, dealloc);
+					if(CPU==AMD_X86_64) {
+						snprintf(outBuf, sizeof(outBuf), "\tmovq %%%s, %%rax\n%s\tret\n",
+								reg, dealloc); 
+					} else {
+						snprintf(outBuf, sizeof(outBuf), "\tmovl %%%s, %%eax\n%s\tret\n",
+								reg, dealloc);
+					}
 				} else {
-					snprintf(outBuf, sizeof(outBuf), "\tmovl $%s, %%eax\n%s\tret\n",
-							ins.arguments[0], dealloc);
+						snprintf(outBuf, sizeof(outBuf), "\tmovl $%s, %%eax\n%s\tret\n",
+								ins.arguments[0], dealloc);
 				}
 				free(dealloc);
 			}
@@ -362,7 +422,7 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 								s1, dest, s2, dest, dest);
 					} else if(CPU==I386) {
 						snprintf(outBuf, sizeof(outBuf), 
-								"\tmovl %%%s, %%%s\n\tandl %%%s, %%%s\n\tnotq %%%s\n",
+								"\tmovl %%%s, %%%s\n\tandl %%%s, %%%s\n\tnotl %%%s\n",
 								s1, dest, s2, dest, dest);
 
 					}

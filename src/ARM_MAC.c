@@ -31,6 +31,33 @@ char *stackDeallocateARM_MAC() {
 	return ret; 
 }
 
+void ARM_MACGetLVAlloc(char *buf, int bSize, Variable *var) {
+	char *vName = var->varName;
+	char *value = var->value;
+	int offset = var->offset;
+	switch(var->type) {
+		case INT: snprintf(buf, bSize,
+						  "\tmov x28, %s\n"
+						  "\tstr x28, [sp, #%d]\n",
+						  value, offset);
+				  break;
+		case CHAR: snprintf(buf, bSize,
+						  "\tmov x28, #%d\n"
+						  "\tstr x28, [sp, #%d]\n",
+						  (int)value[0], offset);
+				   break;
+		case STRING: snprintf(buf, bSize,
+							 "\tadrp x28, wl_str_%s@PAGE\n"
+							 "\tadd x28, x28, wl_str_%s@PAGEOFF\n"
+							 "\tstr x28, [sp, %d]\n",
+							 vName, vName, offset);
+					 break;
+		case FLOAT: break;
+		case VOID: break;
+		case ZERO: break;
+	};
+}
+
 char *mapRegister(char *reg) {
 	int regNum = regToEnum(reg);	
 	switch(regNum) {

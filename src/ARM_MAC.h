@@ -23,6 +23,7 @@ typedef struct {
 
 char *stackAllocateARM_MAC();
 char *stackDeallocateARM_MAC();
+void ARM_MACGetLVAlloc(char *buf, int bSize, Variable *var);
 char *convertInstructionARM_MAC(AsmOut *out, Instruction ins);
 
 #endif

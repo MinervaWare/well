@@ -56,6 +56,7 @@ enum registersAMD_X86_64 {
 
 char *stackAllocateAMD_X86_64();
 char *stackDeallocateAMD_X86_64();
+void AMD_X86_64GetLVAlloc(char *buf, size_t bSize, Variable *var);
 char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins);
 
 #endif

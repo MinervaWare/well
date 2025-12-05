@@ -131,67 +131,33 @@ char *getLVTAllocation(Function *func) {
 			int offset = func->lvt->variables[i].offset;
 			if(value==NULL||vName==NULL) continue;
 			char buf[strlen(vName)+strlen(value)+1024];
-			if(CPU==AMD_X86_64) {
-				switch(func->lvt->variables[i].type) {
-					case INT: snprintf(buf, sizeof(buf),
-									  "\tmovq $%s, -%d(%%rbp)\n",
-									  value, offset);
+			switch(CPU) {
+				case I386:
+				case AMD_X86_64: AMD_X86_64GetLVAlloc(buf, sizeof(buf), 
+										 &func->lvt->variables[i]);
+								 break;
+				case ARMv8:
+				case ARM_MAC: ARM_MACGetLVAlloc(buf, sizeof(buf),
+									  &func->lvt->variables[i]);
 							  break;
-					case CHAR: snprintf(buf, sizeof(buf),
-									   "\tmovq $%d, -%d(%%rbp)\n",
-									   (int)value[0], offset);
-							   break;
-					case STRING: snprintf(buf, sizeof(buf),
-										 "\tmovq wl_str_%s(%%rip), %%r10\n"
-										 "\tmovq %%r10, -%d(%%rbp)\n",
-										 vName, offset); 
-							    break;
-					case FLOAT: snprintf(buf, sizeof(buf),
-									  "\tmovss wl_fl_%s(%%rip), %%xmm7\n"
-									  "\tmovss %%xmm7, -%d(%%rbp)\n",
-									  vName, offset);
-								break;
-					case VOID: break;
-					case ZERO: break;
-				};
-				if(res==NULL) {
-					res = calloc(strlen(buf)+1, sizeof(char));
-					strcpy(res, buf);
-				} else {
-					res = (char *)realloc(res,
-							(strlen(res)+strlen(buf)+1)*sizeof(char));
-					strcat(res, buf);
-				}
-			} else if(CPU==ARM_MAC||CPU==ARMv8) {
-				switch(func->lvt->variables[i].type) {
-					case INT: snprintf(buf, sizeof(buf),
-									  "\tmov x28, %s\n"
-									  "\tstr x28, [sp, #%d]\n",
-									  value, offset);
-							  break;
-					case CHAR: snprintf(buf, sizeof(buf),
-									  "\tmov x28, #%d\n"
-									  "\tstr x28, [sp, #%d]\n",
-									  (int)value[0], offset);
-							   break;
-					case STRING: snprintf(buf, sizeof(buf),
-										 "\tadrp x28, wl_str_%s@PAGE\n"
-										 "\tadd x28, x28, wl_str_%s@PAGEOFF\n"
-										 "\tstr x28, [sp, %d]\n",
-										 vName, vName, offset);
-							     break;
-					case FLOAT: break;
-					case VOID: break;
-					case ZERO: break;
-				};
-				if(res==NULL) {
-					res = calloc(strlen(buf)+1, sizeof(char));
-					strcpy(res, buf);
-				} else {
-					res = (char *)realloc(res,
-							(strlen(res)+strlen(buf)+1)*sizeof(char));
-					strcat(res, buf);
-				}
+				case ALPHA: break; /*TODO*/
+				case ITANIUM_64: break; /*TODO*/
+				case ARMv7: break; /*TODO*/
+				case POWERPC: break; /*TODO*/
+				case RS6000: break; /*TODO*/
+				case SZ_IBM: break; /*TODO*/
+				case SPARC: break; /*TODO*/
+				case MIPS: break; /*TODO*/
+				case HPPA: break; /*TODO*/
+
+			};
+			if(res==NULL) {
+				res = calloc(strlen(buf)+1, sizeof(char));
+				strcpy(res, buf);
+			} else {
+				res = (char *)realloc(res,
+						(strlen(res)+strlen(buf)+1)*sizeof(char));
+				strcat(res, buf);
 			}
 		}
 	}
@@ -253,14 +219,14 @@ char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 			}
 		}	
 	}
-	printf("%s\n", res);
 	return res;
 }
 
 void convertFunctions(AsmOut *out) {
 	out->buffers.functions = calloc(1, sizeof(char));
+	int bufferSize = 1;
+	memset(out->buffers.functions, 0, bufferSize);
 
-	size_t bufferSize=1;
 	int i,j;
 	for(i=0;i<out->parser->totalFunctions;i++) {
 		char *header = createFunctionHeader(out->parser->functions[i].funName);
@@ -335,7 +301,7 @@ void convertFunctions(AsmOut *out) {
 			char *deallocateStack = NULL;
 			switch(CPU) {
 				case ALPHA: deallocateStack = stackDeallocateALPHA();break;
-				case AMD_X86_64: deallocateStack = stackDeallocateAMD_X86_64();break;
+				case AMD_X86_64: 
 				case I386: deallocateStack = stackDeallocateAMD_X86_64();break;
 				case ITANIUM_64: break; /*TODO*/
 				case ARMv8:
@@ -380,7 +346,7 @@ char *getAsmString(char *name, char *value) {
                            "\t.text\n\t.global wl_str_%s\n.rawwl_str%s:\n\t.asciz %s\n\t"
                            ".data\n\t.align 8\nwl_str_%s:\n\t.quad .rawwl_str%s\n",
                            name, name, value, name, name);break;
-		case I386: break; snprintf(buf, sizeof(buf),
+		case I386: snprintf(buf, sizeof(buf),
                            "\t.text\n\t.global wl_str_%s\n.rawwl_str%s:\n\t.asciz %s\n\t"
                            ".data\n\t.align 8\nwl_str_%s:\n\t.long .rawwl_str%s\n",
                            name, name, value, name, name);break;
