@@ -263,7 +263,7 @@ Variable *queryLocalVariable(struct parserData *parser,
 		if(lineNum>parser->functions[1].scope.lineNum)
 			func = &parser->functions[1];
 		else func = &parser->functions[0];
-	} else func = &parser->functons[0];
+	} else func = &parser->functions[0];
 	if(func==NULL) return res;
 	for(i=0;i<func->lvt->totalVariables;i++) {
 		if(!strcmp(var,func->lvt->variables[i].varName))
