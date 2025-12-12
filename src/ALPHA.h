@@ -22,6 +22,7 @@ enum registersALPHA {
 
 char *stackAllocateALPHA();
 char *stackDeallocateALPHA();
+void ALPHAGetLVTAlloc(char *buf, size_t bSize, Variable *var);
 char *mapRegisterALPHA(char *reg);
 char *convertInstructionALPHA(AsmOut *out, Instruction ins);
 

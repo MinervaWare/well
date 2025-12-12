@@ -21,6 +21,32 @@ char *stackDeallocateALPHA() {
 	return ret;
 }
 
+void ALPHAGetLVTAlloc(char *buf, size_t bSize, Variable *var) {
+	char *vName = var->varName;
+	char *value = var->value;
+	int offset = var->offset;
+	switch(var->type) {
+		case INT: snprintf(buf, bSize,
+						  "\tlda $22, %s($31)\n"
+						  "\tstq $22, %d($23)\n",
+						  value, offset);
+				  break;
+		case CHAR: snprintf(buf, bSize,
+						   "\tlda $22, %d($31)\n"
+						   "\tstq $22, %d($23)\n",
+						   (int)value[0], offset);
+				   break;
+		case STRING: snprintf(buf, bSize,
+							 "\tlda $22, wl_str_%s\n"
+							 "\tstq $22, %d($23)\n",
+							 vName, offset);
+					 break;
+		case FLOAT: break;
+		case VOID: break;
+		case ZERO: break;
+	};
+}
+
 char *mapRegisterALPHA(char *reg) {
 	int regNum = regToEnum(reg);
 	switch(regNum) {
@@ -57,6 +83,10 @@ char *getCurrentVarALPHA(struct parserData *parser, Instruction *ins, int argSpo
 			case ZERO: snprintf(asmVName, sizeof(asmVName), 
 							   "wl_z_%s", ins->arguments[argSpot]);break;
 		};
+	} else {
+		v = queryLocalVariable(parser, ins->lineNum, ins->arguments[argSpot]);
+		if(v!=NULL) snprintf(asmVName, sizeof(asmVName), "%d($23)", v->offset);
+		else snprintf(asmVName, sizeof(asmVName), "%s", v->value);
 	}
 	res = calloc(strlen(asmVName)+1, sizeof(char));
 	strcpy(res, asmVName);
@@ -76,6 +106,8 @@ char *triArgInsRDestALPHA(char *ins, Instruction *wins) {
 }
 
 char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
+	if(ins.instruction==NULL) return NULL;
+	if(!strcmp(ins.instruction, "\n")) return NULL;
 	int args = ins.argLen;
 	int outlen = args*DEFMAXFSIZE;
 	char outBuf[outlen];
@@ -136,6 +168,7 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 				char *var = getCurrentVarALPHA(out->parser, &ins, 0);
 				val1 = calloc(strlen(var)+1, sizeof(char));
 				strcpy(val1, var);
+				free(var); var = NULL;
 			}
 			if(checkRegister(ins.arguments[1])) {
 				char *ALPHAReg = mapRegisterALPHA(ins.arguments[1]);
@@ -145,9 +178,23 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 				char *var = getCurrentVarALPHA(out->parser, &ins, 1);
 				val2 = calloc(strlen(var)+1, sizeof(char));
 				strcpy(val2, var);
+				free(var); var = NULL;
 			}
-			snprintf(outBuf, sizeof(outBuf),
-					"\tlda %s, %s\n", val2, val1);
+			if(val1[strlen(val1)-1]==')') {
+				snprintf(outBuf, sizeof(outBuf),
+						"\tldq $22, %s\n"
+						"\tmov $22, %s\n", val1, val2);
+			} else if(val2[strlen(val2)-1]==')') {
+				snprintf(outBuf, sizeof(outBuf),
+						"\tmov $22, %s\n"
+						"\tstq $22, %s\n", val1, val2);	
+			} else if(val1[0]=='$'&&val2[0]=='$') {
+				snprintf(outBuf, sizeof(outBuf),
+						"\tmov %s, %s\n", val2, val1);
+			} else {
+				snprintf(outBuf, sizeof(outBuf),
+						"\tlda %s, %s\n", val2, val1);
+			}
 			if(val1!=NULL) {free(val1);val1=NULL;}
 			if(val2!=NULL) {free(val2);val2=NULL;}
 

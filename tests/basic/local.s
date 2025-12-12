@@ -1,74 +1,61 @@
 	.text
 	.global switch
 switch:
-	pushq %rbp
-	movq %rsp, %rbp
-	subq $32, %rsp
-	movq $0, -8(%rbp)
-	movq %rdi,-8(%rbp)
-	movq %rsi,%rdi
-	movq -8(%rbp),%rsi
-	addq $32, %rsp
-	popq %rbp
+	lda $30, -16($30)
+	stq $26, 0($30)
+	stq $15, 8($30)
+	bis $31, $30, $15
+	lda $22, 0($31)
+	stq $22, 8($23)
+	mov $22, $16
+	stq $22, 8($23)
+	mov $16, $17
+	ldq $22, 8($23)
+	mov $22, $17
+	mov $15, $30
+	ldq $26, 0($30)
+	ldq $15, 8($30)
+	lda $30, 16($30)
+	ret $31, ($26), 1
 	ret
 	.text
 	.global main
 main:
-	pushq %rbp
-	movq %rsp, %rbp
-	subq $32, %rsp
-	movq wl_str_testLocal(%rip), %r10
-	movq %r10, -8(%rbp)
-	movq $5, -16(%rbp)
-	movq $2, -24(%rbp)
-	movq wl_str_sw(%rip), %r10
-	movq %r10, -32(%rbp)
-	movq wl_str_fstr(%rip), %r10
-	movq %r10, -40(%rbp)
-	movss wl_fl_fl(%rip), %xmm7
-	movss %xmm7, -44(%rbp)
-	movq -8(%rbp),%rdi
-	call printf
-	movq -16(%rbp),%rdi
-	movq -24(%rbp),%rsi
-	call switch
-	movq %rsi,%rdx
-	movq %rdi,%rsi
-	movq -32(%rbp),%rdi
-	call printf
-	movq -40(%rbp),%rdi
-	movq -44(%rbp),%xmm1
-	call printf
-	movq %rdi, %rax
-	addq $32, %rsp
-	popq %rbp
-	ret
-	.text
-	.global wl_str_testLocal
-.rawwl_strtestLocal:
-	.asciz "I am the Walrus\n"
-	.data
-	.align 8
+	ldgp $29, 0($27)
+	lda $30, -16($30)
+	stq $26, 0($30)
+	stq $15, 8($30)
+	bis $31, $30, $15
+	lda $22, wl_str_testLocal
+	stq $22, 8($23)
+	lda $22, 5($31)
+	stq $22, 16($23)
+	lda $22, 2($31)
+	stq $22, 24($23)
+	lda $22, wl_str_sw
+	stq $22, 32($23)
+	ldq $22, 8($23)
+	mov $22, $16
+	jsr $26, printf
+	ldq $22, 16($23)
+	mov $22, $16
+	ldq $22, 24($23)
+	mov $22, $17
+	jsr $26, switch
+	mov $18, $17
+	mov $17, $16
+	ldq $22, 32($23)
+	mov $22, $16
+	jsr $26, printf
+	ldgp $29, 0($26)
+	bis $31, 0, $1
+	mov $1, $0
+	mov $15, $30
+	ldq $26, 0($30)
+	ldq $15, 8($30)
+	lda $30, 16($30)
+	ret $31, ($26), 1
 wl_str_testLocal:
-	.quad .rawwl_strtestLocal
-	.text
-	.global wl_str_sw
-.rawwl_strsw:
-	.asciz "a: %d, b: %d\n"
-	.data
-	.align 8
+	.asciz "I am the Walrus\n"
 wl_str_sw:
-	.quad .rawwl_strsw
-	.text
-	.global wl_str_fstr
-.rawwl_strfstr:
-	.asciz "f: %f\n"
-	.data
-	.align 8
-wl_str_fstr:
-	.quad .rawwl_strfstr
-
-	.global wl_fl_fl
-	.p2align 2,0x0
-wl_fl_fl:
-	.long 0x41200
+	.asciz "a: %d, b: %d\n"

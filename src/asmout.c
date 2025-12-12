@@ -140,7 +140,9 @@ char *getLVTAllocation(Function *func) {
 				case ARM_MAC: ARM_MACGetLVAlloc(buf, sizeof(buf),
 									  &func->lvt->variables[i]);
 							  break;
-				case ALPHA: break; /*TODO*/
+				case ALPHA: ALPHAGetLVTAlloc(buf, sizeof(buf),
+									&func->lvt->variables[i]);
+							break; 
 				case ITANIUM_64: break; /*TODO*/
 				case ARMv7: break; /*TODO*/
 				case POWERPC: break; /*TODO*/
