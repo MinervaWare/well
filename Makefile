@@ -1,6 +1,6 @@
 CC= gcc
-CFLAGS= -g -O2 -std=c89 -Iinclude -Wall -Wframe-larger-than=2048 -Wimplicit-fallthrough=5 -Wno-implicit-function-declaration -Wno-unused-variable -Wno-unused-result 
-CFLAGS_REL = -O2 -std=c89 -Iinclude -fomit-frame-pointer -fconserve-stack -Wall -Wframe-larger-than=2048 -Wimplicit-fallthrough=5 -Wno-implicit-function-declaration -Wno-unused-variable -Wno-unused-result
+CFLAGS= -g -O2 -std=c89 -Iinclude -Wall -Wframe-larger-than=2048  -Wno-implicit-function-declaration -Wno-unused-variable -Wno-unused-result 
+CFLAGS_REL= -O2 -std=c89 -Iinclude -fomit-frame-pointer -fconserve-stack -Wall -Wframe-larger-than=2048  -Wno-implicit-function-declaration -Wno-unused-variable -Wno-unused-result
 
 SRCS:= $(wildcard src/*.c) \
 	   $(wildcard include/*.c)

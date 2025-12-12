@@ -1,14 +1,14 @@
 	.text
 	.global main
 main:
-	pushl %ebp
-	movl %esp, %ebp
-	subl $32, %esp
-	movl wl_str_text,%edi
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $32, %rsp
+	movq wl_str_text(%rip),%rdi
 	call printf
-	movl %edi, %eax
-	addl $32, %esp
-	popl %ebp
+	movq %rdi, %rax
+	addq $32, %rsp
+	popq %rbp
 	ret
 	.text
 	.global wl_str_text
@@ -17,4 +17,4 @@ main:
 	.data
 	.align 8
 wl_str_text:
-	.long .rawwl_strtext
+	.quad .rawwl_strtext

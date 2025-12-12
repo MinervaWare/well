@@ -24,6 +24,7 @@ typedef struct {
 #define WERROR_INVALID_SYNTAX 7
 #define WERROR_EXTERN_NOVALUE 8
 #define WERROR_MISSING_INS_ARG 9
+#define WERROR_INVALID_OPERATOR 10
 
 #define WLOG_WERROR(werror, file, line, function, ...) 		\
 	fprintf(stderr, "%s \033[31m"#werror"\033[0m in %s:%d - %s\n%s",		\

@@ -53,6 +53,10 @@ enum varTypes {
 
 #define DEFALLOCSTEP 5
 
+#define IFOPALLOCS 3
+
+typedef void (*WPFUNC)();
+
 /*Declarations for dynamic scope arrays*/
 typedef struct {
 	enum wTypes scopeType;

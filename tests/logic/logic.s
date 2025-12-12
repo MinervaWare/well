@@ -1,115 +1,115 @@
 	.text
 	.global logic
 logic:
-	pushl %ebp
-	movl %esp, %ebp
-	subl $32, %esp
-	movl wl_int_a,%edi
-	movl %edi, %esi
-	notl %esi
-	movl wl_str_ntest,%edi
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $32, %rsp
+	movq wl_int_a(%rip),%rdi
+	movq %rdi, %rsi
+	notq %rsi
+	movq wl_str_ntest(%rip),%rdi
 	call printf
-	movl wl_int_a,%edi
-	movl wl_int_b,%esi
-	movl %edi, %edx
-	andl %esi, %edx
-	movl %edx,%esi
-	movl wl_str_atest,%edi
+	movq wl_int_a(%rip),%rdi
+	movq wl_int_b(%rip),%rsi
+	movq %rdi, %rdx
+	andq %rsi, %rdx
+	movq %rdx,%rsi
+	movq wl_str_atest(%rip),%rdi
 	call printf
-	movl wl_int_a,%edi
-	movl wl_int_b,%esi
-	movl %edi, %edx
-	orl %esi, %edx
-	movl %edx,%esi
-	movl wl_str_otest,%edi
+	movq wl_int_a(%rip),%rdi
+	movq wl_int_b(%rip),%rsi
+	movq %rdi, %rdx
+	orq %rsi, %rdx
+	movq %rdx,%rsi
+	movq wl_str_otest(%rip),%rdi
 	call printf
-	movl wl_int_a,%edi
-	movl wl_int_b,%esi
-	movl %edi, %edx
-	orl %esi, %edx
-	notl %edx
-	movl %edx,%esi
-	movl wl_str_notest,%edi
+	movq wl_int_a(%rip),%rdi
+	movq wl_int_b(%rip),%rsi
+	movq %rdi, %rdx
+	orq %rsi, %rdx
+	notq %rdx
+	movq %rdx,%rsi
+	movq wl_str_notest(%rip),%rdi
 	call printf
-	movl wl_int_a,%edi
-	movl wl_int_b,%esi
-	movl %edi, %edx
-	andl %esi, %edx
-	notl %edx
-	movl %edx,%esi
-	movl wl_str_natest,%edi
+	movq wl_int_a(%rip),%rdi
+	movq wl_int_b(%rip),%rsi
+	movq %rdi, %rdx
+	andq %rsi, %rdx
+	notq %rdx
+	movq %rdx,%rsi
+	movq wl_str_natest(%rip),%rdi
 	call printf
-	movl wl_int_a,%edi
-	movl wl_int_b,%esi
-	movl %edi, %edx
-	xorl %edx, %edx
-	movl %edx,%esi
-	movl wl_str_xtest,%edi
+	movq wl_int_a(%rip),%rdi
+	movq wl_int_b(%rip),%rsi
+	movq %rdi, %rdx
+	xorq %rdx, %rdx
+	movq %rdx,%rsi
+	movq wl_str_xtest(%rip),%rdi
 	call printf
-	addl $32, %esp
-	popl %ebp
+	addq $32, %rsp
+	popq %rbp
 	ret
 	.text
 	.global math
 math:
-	pushl %ebp
-	movl %esp, %ebp
-	subl $32, %esp
-	movl wl_int_a,%edi
-	movl wl_int_b,%esi
-	movl %edi, %edx
-	addl %edx, %edx
-	movl %edx,%esi
-	movl wl_str_adtest,%edi
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $32, %rsp
+	movq wl_int_a(%rip),%rdi
+	movq wl_int_b(%rip),%rsi
+	movq %rdi, %rdx
+	addq %rdx, %rdx
+	movq %rdx,%rsi
+	movq wl_str_adtest(%rip),%rdi
 	call printf
-	movl wl_int_a,%edi
-	movl wl_int_b,%esi
-	movl %edi, %edx
-	subl %edx, %edx
-	movl %edx,%esi
-	movl wl_str_sutest,%edi
+	movq wl_int_a(%rip),%rdi
+	movq wl_int_b(%rip),%rsi
+	movq %rdi, %rdx
+	subq %rdx, %rdx
+	movq %rdx,%rsi
+	movq wl_str_sutest(%rip),%rdi
 	call printf
-	movl wl_int_a,%edi
-	movl wl_int_b,%esi
-	movl %edi, %edx
-	imull %edx, %edx
-	movl %edx,%esi
-	movl wl_str_mutest,%edi
+	movq wl_int_a(%rip),%rdi
+	movq wl_int_b(%rip),%rsi
+	movq %rdi, %rdx
+	imulq %rdx, %rdx
+	movq %rdx,%rsi
+	movq wl_str_mutest(%rip),%rdi
 	call printf
-	movl wl_int_a,%edi
-	movl wl_int_b,%esi
-	movl %edi, %eax
-	cltd
-	idivl %esi
-	movl %eax, %edx
-	movl %edx,%esi
-	movl wl_str_ditest,%edi
+	movq wl_int_a(%rip),%rdi
+	movq wl_int_b(%rip),%rsi
+	movq %rdi, %rax
+	cqto
+	idivq %rsi
+	movq %rax, %rdx
+	movq %rdx,%rsi
+	movq wl_str_ditest(%rip),%rdi
 	call printf
-	movl wl_int_a,%edi
-	movl wl_int_b,%esi
-	movl %edi, %eax
-	cltd
-	idivl %esi
-	movl %edx, %edx
-	movl %edx,%esi
-	movl wl_str_motest,%edi
+	movq wl_int_a(%rip),%rdi
+	movq wl_int_b(%rip),%rsi
+	movq %rdi, %rax
+	cqto
+	idivq %rsi
+	movq %rdx, %rdx
+	movq %rdx,%rsi
+	movq wl_str_motest(%rip),%rdi
 	call printf
-	addl $32, %esp
-	popl %ebp
+	addq $32, %rsp
+	popq %rbp
 	ret
 	.text
 	.global main
 main:
-	pushl %ebp
-	movl %esp, %ebp
-	subl $32, %esp
-	movl wl_str_hello,%edi
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $32, %rsp
+	movq wl_str_hello(%rip),%rdi
 	call printf
 	call logic
 	call math
-	movl %edi, %eax
-	addl $32, %esp
-	popl %ebp
+	movq %rdi, %rax
+	addq $32, %rsp
+	popq %rbp
 	ret
 	.text
 	.global wl_str_hello
@@ -118,7 +118,7 @@ main:
 	.data
 	.align 8
 wl_str_hello:
-	.long .rawwl_strhello
+	.quad .rawwl_strhello
 
 	.global wl_int_a
 	.p2align 2,0x0
@@ -136,7 +136,7 @@ wl_int_b:
 	.data
 	.align 8
 wl_str_ntest:
-	.long .rawwl_strntest
+	.quad .rawwl_strntest
 	.text
 	.global wl_str_atest
 .rawwl_stratest:
@@ -144,7 +144,7 @@ wl_str_ntest:
 	.data
 	.align 8
 wl_str_atest:
-	.long .rawwl_stratest
+	.quad .rawwl_stratest
 	.text
 	.global wl_str_otest
 .rawwl_strotest:
@@ -152,7 +152,7 @@ wl_str_atest:
 	.data
 	.align 8
 wl_str_otest:
-	.long .rawwl_strotest
+	.quad .rawwl_strotest
 	.text
 	.global wl_str_notest
 .rawwl_strnotest:
@@ -160,7 +160,7 @@ wl_str_otest:
 	.data
 	.align 8
 wl_str_notest:
-	.long .rawwl_strnotest
+	.quad .rawwl_strnotest
 	.text
 	.global wl_str_natest
 .rawwl_strnatest:
@@ -168,7 +168,7 @@ wl_str_notest:
 	.data
 	.align 8
 wl_str_natest:
-	.long .rawwl_strnatest
+	.quad .rawwl_strnatest
 	.text
 	.global wl_str_xtest
 .rawwl_strxtest:
@@ -176,7 +176,7 @@ wl_str_natest:
 	.data
 	.align 8
 wl_str_xtest:
-	.long .rawwl_strxtest
+	.quad .rawwl_strxtest
 	.text
 	.global wl_str_adtest
 .rawwl_stradtest:
@@ -184,7 +184,7 @@ wl_str_xtest:
 	.data
 	.align 8
 wl_str_adtest:
-	.long .rawwl_stradtest
+	.quad .rawwl_stradtest
 	.text
 	.global wl_str_sutest
 .rawwl_strsutest:
@@ -192,7 +192,7 @@ wl_str_adtest:
 	.data
 	.align 8
 wl_str_sutest:
-	.long .rawwl_strsutest
+	.quad .rawwl_strsutest
 	.text
 	.global wl_str_mutest
 .rawwl_strmutest:
@@ -200,7 +200,7 @@ wl_str_sutest:
 	.data
 	.align 8
 wl_str_mutest:
-	.long .rawwl_strmutest
+	.quad .rawwl_strmutest
 	.text
 	.global wl_str_ditest
 .rawwl_strditest:
@@ -208,7 +208,7 @@ wl_str_mutest:
 	.data
 	.align 8
 wl_str_ditest:
-	.long .rawwl_strditest
+	.quad .rawwl_strditest
 	.text
 	.global wl_str_motest
 .rawwl_strmotest:
@@ -216,4 +216,4 @@ wl_str_ditest:
 	.data
 	.align 8
 wl_str_motest:
-	.long .rawwl_strmotest
+	.quad .rawwl_strmotest

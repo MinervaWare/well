@@ -8,6 +8,18 @@
 
 struct parserData *gPData;
 
+/*Private utility protos*/
+int checkImportantType(char *line);
+enum wTypes getScopeType(char *line);
+char *getWT(enum wTypes t);
+char *getScopeName(char *line);
+Scope getScopeAt(int lineNum, struct parserData *parser);
+Scope getNextScope(Scope scope, struct parserData *parser);
+Variable *getVarFrom(struct parserData *parser, char *name);
+Variable *queryLocalVariable(struct parserData *parser, 
+		int lineNum, char *var);
+char *querySubFuncScopeName(Function *func, int lineNum);
+
 /*
  * Checks if line contains important type:
  * EX: ~constants or ~type:function 
@@ -442,9 +454,100 @@ void disectInstructionName(Instruction *ins) {
 	}
 }
 
-void parseInstruction(char *line, Instruction *ins) {
+/*func goes unused, it's there to follow my parse standard for a WPFUNC*/
+void parseInstruction(Function *func, char *line, Instruction *ins) {
+	if(!line||!ins) return;
 	disectInstructionName(ins);
 	getInstructionArguments(ins);
+}
+
+/* * * * *
+ * IFSTATE & LOOP related functions
+ * * * * */
+
+int isChIfStateOp(char c) {
+	/*TODO add ops like |, &, ^, etc.*/
+	if(c=='='||c=='!'||
+			c=='>'||c=='<') return 1;
+	return 0;
+}
+
+/*This is just converting stuff like "==" into "je"*/
+char *convertIfStateOp(char *op) {
+	if(!strcmp(op, "==")) return "je";
+	else if(!strcmp(op, "!=")) return "jne";
+	else if(!strcmp(op, "<=")) return "jle";
+	else if(!strcmp(op, ">=")) return "jge";
+	else return NULL;
+}
+
+void disectIfStateInstructionArgs(Function *func, char *line, Instruction *ins) {
+	if(!ins->arguments) {
+		ins->capacity = 3; 
+		ins->argLen = 3;
+		ins->arguments = calloc(ins->capacity, sizeof(char *));
+	}
+
+	ins->arguments[0] = querySubFuncScopeName(func, ins->lineNum);
+
+	char *cpy = calloc(strlen(line)+1, sizeof(char));
+	char *orig = cpy;
+	strcpy(cpy, line);
+	cpy = strstr(cpy, "(");
+	cpy++;
+	char tmp[1024];
+	int i, j=0;
+	for(i=0;strlen(cpy)>0;i++,cpy++) {
+		if(cpy[0]==')') {
+			ins->arguments[2] = calloc(strlen(tmp)+1, sizeof(char));
+			strcpy(ins->arguments[2], tmp);
+			ins->arguments[2][i-j] = '\0';
+			WTRIM(ins->arguments[2]);
+			break;
+		}
+		if(strlen(cpy)>=2&&
+				(isChIfStateOp(cpy[0])&&isChIfStateOp(cpy[1]))) {
+			ins->arguments[1] = calloc(strlen(tmp)+1, sizeof(char));
+			strcpy(ins->arguments[1], tmp);
+			ins->arguments[1][i-j] = '\0';
+			WTRIM(ins->arguments[0]);
+			memset(tmp, 0, sizeof(tmp));
+			i+=2; cpy+=2;
+			j += i;
+		}
+		tmp[i-j] = cpy[0];
+	}
+	free(orig); orig = NULL;
+}
+
+void getIfStateOp(char *line, Instruction *ins) {
+	char *cpy = calloc(strlen(line)+1, sizeof(char));
+	char *tmp = calloc(IFOPALLOCS, sizeof(char)); /*2 is sizeof op I.E. "=="*/
+	strcpy(cpy, line);
+	int i;
+	for(i=0;strlen(cpy)>=2;cpy++,i++) {
+		if(isChIfStateOp(cpy[0])&&
+				isChIfStateOp(cpy[1])) {
+			snprintf(tmp, IFOPALLOCS*sizeof(char), "%c%c", 
+					cpy[0], cpy[1]);
+			break;
+		}
+	}
+	cpy -= i;
+	free(cpy); cpy = NULL;
+	ins->instruction = convertIfStateOp(tmp);
+	if(ins->instruction==NULL) {
+		/*invalid op*/
+		WLOG_WERROR(WERROR_INVALID_OPERATOR, ins->errData.fileName, 
+				ins->errData.lineNum, ins->errData.function, "");	
+	}
+	free(tmp); tmp = NULL;
+}
+
+void parseIfStateInstruction(Function *func, char *line, Instruction *ins) {
+		if(!line||!ins||!func) return;
+		getIfStateOp(line, ins);
+		disectIfStateInstructionArgs(func, line, ins);
 }
 
 /* * * * *
@@ -480,6 +583,16 @@ int checkBrackFrom(int lineFrom, int lineTo, struct parserData *parser) {
 	return 0;
 }
 
+char *querySubFuncScopeName(Function *func, int lineNum) {
+	if(!func) return NULL;
+	int i;
+	for(i=0;i<func->totalScopes;i++) {
+		if(func->subScopes[i].scope.lineNum==lineNum) 
+			return func->subScopes[i].scope.scopeName;
+	}
+	return NULL;
+}
+
 void addFunctionSubScopeData(Function *func, char *data) {
 	if(!func||!data) return;
 	int *sspos = &func->totalScopes;
@@ -507,9 +620,11 @@ void startFunctionSubScope(Function *func, char *data, int lineNum) {
 	func->subScopes[func->totalScopes].scope.lineNum = lineNum;
 	char buf[1024];
 	switch(func->subScopes[func->totalScopes].scope.scopeType) {
-		case IFSTATE: snprintf(buf, sizeof(buf), "wl_is_%d", func->totalScopes); 
+		case IFSTATE: snprintf(buf, sizeof(buf), "wl_%s_is_%d", 
+							  func->funName, func->totalScopes); 
 					  break;
-		case LOOP: snprintf(buf, sizeof(buf), "wl_lop_%d", func->totalScopes);
+		case LOOP: snprintf(buf, sizeof(buf), "wl_%s_lop_%d", 
+						   func->funName, func->totalScopes);
 				   break;
 		default: break;
 	};
@@ -538,6 +653,10 @@ void buffToFunc(Function *func, struct parserData *parser) {
 			j++;
 			continue;
 		}
+        if(pos>=func->capacity) {
+          	func->capacity+=DEFAULTINSARGSIZE/2;
+          	func->data = (char **)realloc(func->data, sizeof(char *)*func->capacity);
+        }
 		if(checkFuncForExternScope(i, parser)) {
 			startFunctionSubScope(func, parser->fileBuffer[i], i);
 			scopeCarry++;
@@ -545,6 +664,7 @@ void buffToFunc(Function *func, struct parserData *parser) {
 			func->data[pos] = calloc(strlen(parser->fileBuffer[i])+1, sizeof(char));
 			strcpy(func->data[pos], parser->fileBuffer[i]);
 			func->dataLength++;
+			continue;
 		}
 		if(strstr(parser->fileBuffer[i], "}")) {
 			if(scopeCarry>0) endFunctionSubScope(func);
@@ -553,10 +673,6 @@ void buffToFunc(Function *func, struct parserData *parser) {
 			/*-1 would be main*/
 			if(scopeCarry==0) {j++;continue;} 
 		}
-        if(pos>=func->capacity) {
-          	func->capacity+=DEFAULTINSARGSIZE/2;
-          	func->data = (char **)realloc(func->data, sizeof(char *)*func->capacity);
-        }
 		if(scopeCarry>0) {
 			addFunctionSubScopeData(func, parser->fileBuffer[i]);
 			j++;
@@ -574,27 +690,31 @@ void buffToFunc(Function *func, struct parserData *parser) {
 	}
 }
 
+
+
 void parseFunctionInstructions(Function *func) {
 	int i,j=0,k=0;
 	for(i=0;i<func->dataLength;i++) {
 		if(func->data[i]==NULL) continue;
+		WPFUNC parseFunc = (WPFUNC)parseInstruction;
 		if(checkImportantType(func->data[i])) {
-			
-			continue;
+			enum wTypes st = getScopeType(func->data[i]);
+			if(st==IFSTATE) parseFunc = (WPFUNC)parseIfStateInstruction;
+			else if(st==LOOP) continue; /*TODO*/
+			else continue;
 		}
 		char *cpy = calloc(strlen(func->data[i])+1, sizeof(char));
 		strcpy(cpy, func->data[i]);
-		/*memset(func->instructions[i], 0, sizeof(Instruction));*/
 		func->instructions[j].line = calloc(strlen(func->data[i])+1, sizeof(char));
 		strcpy(func->instructions[j].line, func->data[i]);
 		func->instructions[j].instruction = NULL;
 		func->instructions[j].arguments = NULL;
-		func->instructions[j].errData.lineNum = func->scope.lineNum+j;
+		func->instructions[j].errData.lineNum = func->scope.lineNum+i+1; /*+1 since we skip header*/
+		func->instructions[j].lineNum = func->scope.lineNum+i+1;
 		func->instructions[j].errData.function = calloc(strlen(func->funName)+1, 
 				sizeof(char));
 		strcpy(func->instructions[j].errData.function, func->funName);
-		parseInstruction(cpy,
-				&func->instructions[j]);
+		parseFunc(func, cpy, &func->instructions[j]);
 		free(cpy);cpy=NULL;
 		func->instructions[j].lineNum = func->scope.lineNum+i;
 		j++;
@@ -604,7 +724,7 @@ void parseFunctionInstructions(Function *func) {
 		FuncSubScopeData *scope = &func->subScopes[i];
 		if(!scope||!scope->data) continue;
 		for(j=0;j<scope->totalData;j++) {
-			if(checkImportantType(scope->data[j])) continue;
+			if(checkImportantType(scope->data[j])) continue; /*TODO add the recursive sub sub scopes*/
 			char *cpy = calloc(strlen(scope->data[j])+1, sizeof(char));
 			strcpy(cpy, scope->data[j]);
 			scope->instructions[k].lineNum = scope->scope.lineNum+k;
@@ -617,7 +737,7 @@ void parseFunctionInstructions(Function *func) {
 			scope->instructions[k].errData.function = 
 				calloc(strlen(func->funName)+1, sizeof(char));
 			strcpy(scope->instructions[k].errData.function, func->funName);
-			parseInstruction(cpy, &scope->instructions[k]);
+			parseInstruction(func, cpy, &scope->instructions[k]);
 			free(cpy);cpy=NULL;
 			k++;
 		}
@@ -883,16 +1003,19 @@ struct parserData *initParser(wData *data) {
 
 	/*Get all the file data into the file buffer*/
 	char *line = calloc(2048, sizeof(char));
-	int i, mul=1;
+	int i, j=0, mul=1;
 	for(i=0;fgets(line, sizeof(char)*2048, gPData->fData->main)!=NULL;i++) { 
-		if(i>=2048*mul) {
+		if(i-j>=2048*mul) {
 			gPData->fileBuffer = (char **)realloc(gPData->fileBuffer,
 					sizeof(char *)*(2048*mul));
 			mul++;
 		} 
-
-		gPData->fileBuffer[i] = calloc(strlen(line)+1, sizeof(char));
-		strcpy(gPData->fileBuffer[i], line);
+		if(line[0]=='\n'||line[0]=='\0'||line[0]==';') {
+			j++;
+			continue;
+		}
+		gPData->fileBuffer[i-j] = calloc(strlen(line)+1, sizeof(char));
+		strcpy(gPData->fileBuffer[i-j], line);
 
 		free(line); line = NULL;
 		line = calloc(2048, sizeof(char));

@@ -8,11 +8,13 @@ char *stackAllocateAMD_X86_64() {
 	/*auto to 16*/
 	if(CPU==AMD_X86_64) {
 		char *ret = calloc(1024, sizeof(char));
-		sprintf(ret, "\tpushq %%rbp\n\tmovq %%rsp, %%rbp\n\tsubq $32, %%rsp\n");
+		snprintf(ret, 1024*sizeof(char),
+				"\tpushq %%rbp\n\tmovq %%rsp, %%rbp\n\tsubq $32, %%rsp\n");
 		return ret;
 	} else if(CPU==I386) {
 		char *ret = calloc(1024, sizeof(char));
-		sprintf(ret, "\tpushl %%ebp\n\tmovl %%esp, %%ebp\n\tsubl $32, %%esp\n");
+		snprintf(ret, 1024*sizeof(char),
+				"\tpushl %%ebp\n\tmovl %%esp, %%ebp\n\tsubl $32, %%esp\n");
 		return ret;
 	}
 	return NULL;
@@ -22,11 +24,11 @@ char *stackDeallocateAMD_X86_64() {
 	/*auto to 16*/
 	if(CPU==AMD_X86_64) {
 		char *ret = calloc(1024, sizeof(char));
-		sprintf(ret, "\taddq $32, %%rsp\n\tpopq %%rbp\n");
+		snprintf(ret, 1024*sizeof(char), "\taddq $32, %%rsp\n\tpopq %%rbp\n");
 		return ret;
 	} else if(CPU==I386) {
 		char *ret = calloc(1024, sizeof(char));
-		sprintf(ret, "\taddl $32, %%esp\n\tpopl %%ebp\n");
+		snprintf(ret, 1024*sizeof(char), "\taddl $32, %%esp\n\tpopl %%ebp\n");
 		return ret;
 	}
 	return NULL;
@@ -154,15 +156,19 @@ char *getCurrentVar(struct parserData *parser, Instruction *ins, int argSpot) {
 		};
 		if(CPU==AMD_X86_64) strcat(asmVName, "(%rip)");
 	} else {
-		char *bp = NULL;
-		if(CPU==AMD_X86_64) bp = "rbp";
-		else bp = "ebp";
+		char *bp = "rbp";
+		if(CPU==I386) bp = "ebp";
 		v = NULL;
 		v = queryLocalVariable(parser, ins->lineNum, ins->arguments[argSpot]);
 		if(v!=NULL) snprintf(asmVName, sizeof(asmVName), "-%d(%%%s)", v->offset, bp);
 		else {
-			snprintf(asmVName, sizeof(asmVName), "_%s", ins->arguments[argSpot]);
-			if(CPU==AMD_X86_64) strcat(asmVName, "(%rip)");
+			if(!atoi(ins->arguments[argSpot])&&
+					strcmp(ins->arguments[argSpot], "0")) {
+				snprintf(asmVName, sizeof(asmVName), "_%s", ins->arguments[argSpot]);
+				if(CPU==AMD_X86_64) strcat(asmVName, "(%rip)");
+			} else {
+				snprintf(asmVName, sizeof(asmVName), "$%s", ins->arguments[argSpot]);
+			}
 		}
 	}
 	res = calloc(strlen(asmVName)+1, sizeof(char));
@@ -194,6 +200,58 @@ char* triArgInsRDest(char *ins, Instruction *wins) {
 	return buf;
 }
 
+/*This looks redundant on x86_64 because the instructions are pretty much the same for jumps*/
+char *getIfStateCmp(char *arg) {
+	if(!strcmp(arg, "je")) return "je";
+	else if(!strcmp(arg, "jne")) return "jne";
+	else if(!strcmp(arg, "jle")) return "jle";
+	else if(!strcmp(arg, "jge")) return "jge";
+	return NULL;
+}
+
+char *ifStateConvert(AsmOut *out, Instruction *ins) {
+	char *ret = NULL;
+	char outBuf[DEFMAXFSIZE];
+
+	char *val1 = NULL;
+	char *val2 = NULL;
+	char *scopeName = ins->arguments[0];
+	char *op = getIfStateCmp(ins->instruction);
+	if(checkRegister(ins->arguments[1])) {
+		char *AMDReg = mapRegisterAMD_X86_64(ins->arguments[1]);
+		val1 = calloc(strlen(AMDReg)+128, sizeof(char));
+		strcpy(val1, AMDReg);
+		STARTAPPCHAR(val1, '%');
+	} else {
+		char *var = getCurrentVar(out->parser, ins, 1);
+		val1 = calloc(strlen(var)+1, sizeof(char));
+		strcpy(val1, var);
+		free(var); var = NULL;
+	}
+	if(checkRegister(ins->arguments[2])) {
+		char *AMDReg = mapRegisterAMD_X86_64(ins->arguments[2]);
+		val2 = calloc(strlen(AMDReg)+128, sizeof(char));
+		strcpy(val2, AMDReg);
+		STARTAPPCHAR(val2, '%');
+	} else {
+		char *var = getCurrentVar(out->parser, ins, 2);
+		val2 = calloc(strlen(var)+1, sizeof(char));
+		strcpy(val2, var);
+		free(var); var = NULL;
+	}
+	char *cmp = "cmpq";
+	if(CPU==I386) cmp = "cmpl";
+	snprintf(outBuf, sizeof(outBuf), "\t%s %s, %s\n"
+									 "\t%s .%s\n"
+									 ".%s_cont:\n",
+									 cmp, val2, val1, op, scopeName, scopeName);
+	if(val1) {free(val1);val1=NULL;}
+	if(val2) {free(val2);val2=NULL;}
+	ret = calloc(strlen(outBuf)+1, sizeof(char));
+	strcpy(ret, outBuf);
+	return ret;
+}
+
 /*
  * Instruction Conversion
  * This x86_64 version checks for 32-bit and will change registers accordingly.
@@ -202,6 +260,8 @@ char* triArgInsRDest(char *ins, Instruction *wins) {
  * */
 
 char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
+	if(ins.instruction==NULL) return NULL;
+	if(!strcmp(ins.instruction, "\n")) return NULL;
 	int args = ins.argLen;
 	int outlen = args*DEFMAXFSIZE;
 	char outBuf[outlen];
@@ -223,7 +283,7 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 		 * Call: call~ printf
 		 * */
 		if(!strcmp(ins.instruction, "call")) {
-    	    if(ins.argLen>0 && ins.arguments[0]!=NULL)
+    	    if(ins.arguments[0]!=NULL)
     	        snprintf(outBuf, sizeof(outBuf), "\tcall %s\n", ins.arguments[0]);
 		/*
 		 * Return: return~ 0
@@ -269,6 +329,7 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 				char *var = getCurrentVar(out->parser, &ins, 0);
 				val1 = calloc(strlen(var)+1, sizeof(char));
 				strcpy(val1, var);
+				free(var); var = NULL;
 			}
 			if(checkRegister(ins.arguments[1])) {
 				char *AMDReg = mapRegisterAMD_X86_64(ins.arguments[1]);
@@ -279,6 +340,7 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 				char *var = getCurrentVar(out->parser, &ins, 1);
 				val2 = calloc(strlen(var)+1, sizeof(char));
 				strcpy(val2, var);
+				free(var); var = NULL;
 			}
 			char *mov = "movq";
 			if(CPU==AMD_X86_64) {
@@ -288,8 +350,8 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 				snprintf(outBuf, sizeof(outBuf),
 						"\tmovl %s,%s\n", val1, val2);
 			}
-			if(val1!=NULL) free(val1);
-			if(val2!=NULL) free(val2);
+			if(val1!=NULL) {free(val1);val1=NULL;}
+			if(val2!=NULL) {free(val2);val2=NULL;}
     
 		/*
 		 * Bitwise Instructions (Logical modifications are made with symbol operators)
@@ -323,6 +385,19 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 	 * */
 	} else if(args==3) {
 		/*
+		 * Compiler statement related instructions, I.E. If state or loops.
+		 * These statements are generated by the parser.
+		 *
+		 * Users can also use these if they decide to opt out of using ~if or ~loop.
+		 * This would look like:
+		 * jne~ function, arg1, arg2
+		 * */
+		if(getIfStateCmp(ins.instruction)!=NULL) {
+			char *conv = ifStateConvert(out, &ins);
+			snprintf(outBuf, sizeof(outBuf), "%s", conv);
+			free(conv); conv = NULL;
+
+		/*
 		 * Bitwise Instructions (Logical modifications are made with symbol operators)
 		 * */
 
@@ -330,7 +405,7 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 		/* AND: and~ r1, r2, r3
 		 * r1 = r2&r3
 		 * */
-		if(!strcmp(ins.instruction, "and")) {
+		} else if(!strcmp(ins.instruction, "and")) {
 			if(ins.arguments[0]!=NULL&&ins.arguments[1]!=NULL&&
 					ins.arguments[2]!=NULL) {
 				char *dest = mapRegisterAMD_X86_64(ins.arguments[0]);

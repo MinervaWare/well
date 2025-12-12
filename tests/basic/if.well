@@ -1,10 +1,53 @@
-~int:main {
-	~string:test = "I am the Walrus: %d\n"
+~constants {
+	~string:iftest = "- - - If Statement Operator Tests - - -\n"
+}
+
+~void:jeT {
+	~string:jets = "(i == 10) pass\n"
 	~int:i = 10
-	move~ i, r2
-	~if r2 == 10 {
-		move~ test, r1
+	~if(i == 10) {
+		move~ jets, r1
+		move~ i, r2
 		call~ printf
 	}
+}
+
+~void:jneT {
+	~string:jnets = "(i != 10) pass\n"
+	~int:i = 5
+	~if(i != 10) {
+		move~ jnets, r1
+		move~ i, r2
+		call~ printf
+	}
+}
+
+~void:jgeT {
+	~string:jgets = "(i >= 10) pass\n"
+	~int:i = 11
+	~if(i != 10) {
+		move~ jgets, r1
+		move~ i, r2
+		call~ printf
+	}
+}
+
+~void:jleT {
+	~string:jlets = "(i <= 10) pass\n"
+	~int:i = 9
+	~if(i <= 10) {
+		move~ jlets, r1
+		move~ i, r2
+		call~ printf
+	}
+}
+
+~int:main {
+	move~ iftest, r1
+	call~ printf
+	call~ jeT
+	call~ jneT
+	call~ jgeT
+	call~ jleT
 	return~ 0
 }

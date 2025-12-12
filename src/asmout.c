@@ -166,11 +166,12 @@ char *getLVTAllocation(Function *func) {
 
 char *getSubScopeHeader(FuncSubScopeData *subScope) {
 	int len = strlen(subScope->scope.scopeName)+1024;
-	char *res = NULL;
-
+	char *res = calloc(len, sizeof(char));
+	snprintf(res, len*sizeof(char), ".%s:\n", subScope->scope.scopeName);	
 	return res;
 }
 
+/*TODO This needs changed to check what type of scope we are under whenever the loops and other scopes are implemented*/
 char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 	int bufferSize = 1;
 	char *res = calloc(bufferSize, sizeof(char));
@@ -217,9 +218,35 @@ char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 				strcat(res, asmInstruction);
 				free(asmInstruction);
 			}
-		}	
+		}
+		char *ret = calloc(strlen(func->subScopes[i].scope.scopeName)+128, sizeof(char));
+		bufferSize += strlen(ret)+128;
+		snprintf(ret, (strlen(ret)+128)*sizeof(char), "\tjmp .%s_cont\n",
+				func->subScopes[i].scope.scopeName);
+		res = (char *)realloc(res, sizeof(char)*bufferSize);
+		strcat(res, ret);
+		free(ret); ret = NULL;
 	}
 	return res;
+}
+
+char *getStackAllocation() {
+	switch(CPU) {
+		case ALPHA: return stackAllocateALPHA();
+		case I386:
+		case AMD_X86_64: return stackAllocateAMD_X86_64();
+		case ITANIUM_64: break; /*TODO*/
+		case ARMv8:
+		case ARM_MAC: return stackAllocateARM_MAC();
+		case ARMv7: break; /*TODO*/
+		case POWERPC: break; /*TODO*/
+		case RS6000: break; /*TODO*/
+		case SZ_IBM: break; /*TODO*/
+		case SPARC: break; /*TODO*/
+		case MIPS: break; /*TODO*/
+		case HPPA: break; /*TODO*/
+	};
+	return NULL;
 }
 
 void convertFunctions(AsmOut *out) {
@@ -244,23 +271,20 @@ void convertFunctions(AsmOut *out) {
 			Instruction *curIns = &out->parser->functions[i].instructions[j];
 			if(curIns->instruction==NULL) continue;
 			char *asmInstruction = NULL;
-			char *stackAllocation = NULL;
+			char *stackAllocation = getStackAllocation();
 
 			switch(CPU) {
 				case ALPHA: asmInstruction = convertInstructionALPHA(out, *curIns);
-							stackAllocation = stackAllocateALPHA();
 							break;
 				/*The x86_64 code also conducts 32-bit*/
 				case I386:
 				case AMD_X86_64:							
 							asmInstruction = convertInstructionAMD_X86_64(out, *curIns);
-                            stackAllocation = stackAllocateAMD_X86_64();
 							break;
 				case ITANIUM_64: break; /*TODO*/
 				case ARMv8:
 				case ARM_MAC: 
 							asmInstruction = convertInstructionARM_MAC(out, *curIns);
-							stackAllocation = stackAllocateARM_MAC();
 							break;
 				case ARMv7: break; /*TODO*/
 				case POWERPC: break; /*TODO*/
@@ -286,11 +310,9 @@ void convertFunctions(AsmOut *out) {
 					setAllocation=1;
 				}
 				strcat(out->buffers.functions, asmInstruction);
-				free(asmInstruction);
-				asmInstruction = NULL;
+				free(asmInstruction); asmInstruction = NULL;
             }
 			free(stackAllocation);stackAllocation=NULL;
-			if(asmInstruction!=NULL) {free(asmInstruction);asmInstruction=NULL;}
 		}
 		free(LVTAlloc);
 		LVTAlloc = NULL;
