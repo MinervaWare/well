@@ -221,8 +221,15 @@ char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 		}
 		char *ret = calloc(strlen(func->subScopes[i].scope.scopeName)+128, sizeof(char));
 		bufferSize += strlen(ret)+128;
-		snprintf(ret, (strlen(ret)+128)*sizeof(char), "\tjmp .%s_cont\n",
-				func->subScopes[i].scope.scopeName);
+		switch(CPU) {
+			case AMD_X86_64: snprintf(ret, (strlen(ret)+128)*sizeof(char), 
+									 "\tjmp .%s_cont\n",
+									 func->subScopes[i].scope.scopeName);
+			case ARM_MAC: snprintf(ret, (strlen(ret)+128)*sizeof(char), 
+									 "\tb .%s_cont\n",
+									 func->subScopes[i].scope.scopeName);
+			default: break;
+		};
 		res = (char *)realloc(res, sizeof(char)*bufferSize);
 		strcat(res, ret);
 		free(ret); ret = NULL;
