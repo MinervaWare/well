@@ -7,6 +7,7 @@ SRCS:= $(wildcard src/*.c) \
 OBJS:= $(SRCS:.c=.o)
 
 BIN= well
+PREFIX= /usr
 
 .PHONY: all base run_test vim clean_vim clean
 
@@ -23,6 +24,9 @@ release: $(OBJS)
 
 run_test:
 	well tests/helloWorld/helloworld.well -i
+
+install:
+	cp $(BIN) $(PREFIX)/bin
 
 cvim:
 	mkdir -p ~/.vim/syntax
