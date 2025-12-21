@@ -1,0 +1,50 @@
+~extern OEInitRenderer
+~extern OEEnableDebugInfo
+~extern OEEnableFXAA
+~extern OEEnableSSGI
+~extern OERendererIsRunning
+~extern OEPollEvents
+~extern OERenderFrame
+~extern OEDrawObject
+~extern OEGetObjectFromName
+
+~void:event {
+
+}
+
+~void:render {
+	~string:obj = "OECube"
+	move~ obj, r1
+	call~ OEGetObjectFromName
+	move~ r7, r1 
+	call~ OEDrawObject
+}
+
+~void:frameLoop {
+	call~ OERendererIsRunning
+	~if(r7 == 1) {
+		move~ event, r1
+		call~ OEPollEvents
+		move~ render, r1
+		call~ OERenderFrame
+		call~ frameLoop
+	}
+}
+
+~int:main {
+	~int:width = 1280
+	~int:height = 720
+	~string:title = "OE"
+	move~ width, r1
+	move~ height, r2
+	move~ title, r3
+	move~ 0, r4
+	call~ OEInitRenderer
+	call~ OEEnableDebugInfo
+	call~ OEEnableFXAA
+	move~ 32, r1
+	move~ 8, r2
+	call~ OEEnableSSGI
+	call~ frameLoop
+	return~ 0
+}

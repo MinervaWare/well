@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
 	runArgParsing(&data);	
 
 	WASSERT(data.main!=NULL,
-			"FATAL:: No File provided");
+			"FATAL:: No File provided\n");
 
 	struct parserData *p = initParser(&data);
 	parseProgram(p);

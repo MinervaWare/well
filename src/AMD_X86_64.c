@@ -164,7 +164,7 @@ char *getCurrentVar(struct parserData *parser, Instruction *ins, int argSpot) {
 		else {
 			if(!atoi(ins->arguments[argSpot])&&
 					strcmp(ins->arguments[argSpot], "0")) {
-				snprintf(asmVName, sizeof(asmVName), "_%s", ins->arguments[argSpot]);
+				snprintf(asmVName, sizeof(asmVName), "%s", ins->arguments[argSpot]);
 				if(CPU==AMD_X86_64) strcat(asmVName, "(%rip)");
 			} else {
 				snprintf(asmVName, sizeof(asmVName), "$%s", ins->arguments[argSpot]);

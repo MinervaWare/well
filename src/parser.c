@@ -265,12 +265,15 @@ Variable *queryLocalVariable(struct parserData *parser,
 	int i;
 	Function *func = NULL;
 	if(parser->totalFunctions>2) {
-		for(i=1;i<parser->totalFunctions;i++) {
+		for(i=2;i<parser->totalFunctions;i++) {
+			Function *func3 = &parser->functions[i-2];
 			func = &parser->functions[i-1];
 			Function *func2 = &parser->functions[i];
-			if(lineNum>func->scope.lineNum&&
+			if(lineNum>func3->scope.lineNum&&
 					lineNum<func2->scope.lineNum) break;
 		}
+		if(parser->totalFunctions%2==0&&i==parser->totalFunctions)
+			func = &parser->functions[i-1];
 	} else if(parser->totalFunctions==2) {
 		if(lineNum>parser->functions[1].scope.lineNum)
 			func = &parser->functions[1];
@@ -1010,16 +1013,16 @@ struct parserData *initParser(wData *data) {
 					sizeof(char *)*(2048*mul));
 			mul++;
 		} 
-		if(line[0]=='\n'||line[0]=='\0'||line[0]==';') {
+		/*if(line[0]=='\n'||line[0]=='\0'||line[0]==';') {
 			j++;
 			continue;
-		}
+		}*/
 		char *rawptr = line;
 		WTRIM(rawptr);
 		gPData->fileBuffer[i-j] = calloc(strlen(rawptr)+1, sizeof(char));
 		strcpy(gPData->fileBuffer[i-j], rawptr);
 
-		free(line); line = NULL;
+		free(line); line = NULL; rawptr = NULL;
 		line = calloc(2048, sizeof(char));
 	}
 	gPData->bufferSize = i;

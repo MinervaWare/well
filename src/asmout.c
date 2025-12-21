@@ -227,9 +227,11 @@ char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 			case AMD_X86_64: snprintf(ret, (strlen(ret)+128)*sizeof(char), 
 									 "\tjmp .%s_cont\n",
 									 func->subScopes[i].scope.scopeName);
+							 break;
 			case ARM_MAC: snprintf(ret, (strlen(ret)+128)*sizeof(char), 
 									 "\tb .%s_cont\n",
 									 func->subScopes[i].scope.scopeName);
+						  break;
 			default: break;
 		};
 		res = (char *)realloc(res, sizeof(char)*bufferSize);

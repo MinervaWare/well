@@ -28,7 +28,7 @@ run_test:
 install:
 	cp $(BIN) $(PREFIX)/bin
 
-cvim:
+vim:
 	mkdir -p ~/.vim/syntax
 	mkdir -p ~/.vim/ftdetect
 	cp vim/syntax/well.vim ~/.vim/syntax/
