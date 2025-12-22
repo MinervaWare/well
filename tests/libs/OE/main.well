@@ -1,3 +1,5 @@
+; This currently will not directly work because I need to port the OE shader strings.
+
 ~extern OEInitRenderer
 ~extern OEEnableDebugInfo
 ~extern OEEnableFXAA
@@ -7,9 +9,16 @@
 ~extern OERenderFrame
 ~extern OEDrawObject
 ~extern OEGetObjectFromName
+~extern OEIsKeyPressed
+
+~extern SDLK_W
+~extern FRONT
 
 ~void:event {
-
+	call~ OEIsKeyPressed
+	~if(r7 == 1) {
+		
+	}
 }
 
 ~void:render {
@@ -26,6 +35,8 @@
 		move~ event, r1
 		call~ OEPollEvents
 		move~ render, r1
+		move~ 0, r2
+		move~ 0, r3
 		call~ OERenderFrame
 		call~ frameLoop
 	}

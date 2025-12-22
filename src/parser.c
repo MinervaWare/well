@@ -699,6 +699,9 @@ void parseFunctionInstructions(Function *func) {
 	int i,j=0,k=0;
 	for(i=0;i<func->dataLength;i++) {
 		if(func->data[i]==NULL) continue;
+		if(!strcmp(func->data[i], "\t")||
+				!strcmp(func->data[i], "\n")||
+				!strcmp(func->data[i], "\0")) continue;
 		WPFUNC parseFunc = (WPFUNC)parseInstruction;
 		if(checkImportantType(func->data[i])) {
 			enum wTypes st = getScopeType(func->data[i]);
@@ -995,8 +998,10 @@ void parseProgram(struct parserData *parser) {
 }
 
 struct parserData *initParser(wData *data) {
+	if(!data) return NULL;
     gPData = calloc(1, sizeof(struct parserData));
 	gPData->fData = data;
+	CPU = gPData->fData->cpu;
 
 	WASSERT(gPData->fData->main!=NULL,
 			"FATAL:: Main file not found!");

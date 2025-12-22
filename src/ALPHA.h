@@ -5,7 +5,7 @@
 #include "util.h"
 #include "asmout.h"
 #include "parser.h"
-
+#include "cpu.h"
 
 /*refer to http://www.alphalinux.org/wiki/index.php/Alpha_Assembly*/
 enum registersALPHA {
@@ -20,7 +20,7 @@ enum registersALPHA {
 	sp, /*$30*/
 };
 
-char *stackAllocateALPHA();
+char *stackAllocateALPHA(enum cpuType cpu);
 char *stackDeallocateALPHA();
 void ALPHAGetLVTAlloc(char *buf, size_t bSize, Variable *var);
 char *mapRegisterALPHA(char *reg);

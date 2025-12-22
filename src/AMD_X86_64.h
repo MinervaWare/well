@@ -4,6 +4,7 @@
 #include "util.h"
 #include "asmout.h"
 #include "parser.h"
+#include "cpu.h"
 
 enum registersAMD_X86_64 {
 #if defined _WIN32 || defined _WIN64 || defined __WIN32__ || __CYGWIN__
@@ -54,7 +55,7 @@ enum registersAMD_X86_64 {
 	 !strcmp(a_,"xmm3")||!strcmp(a_,"xmm4")|| \
 	 !strcmp(a_,"xmm5")||!strcmp(a_,"xmm6")
 
-char *stackAllocateAMD_X86_64();
+char *stackAllocateAMD_X86_64(enum cpuType cpu);
 char *stackDeallocateAMD_X86_64();
 void AMD_X86_64GetLVAlloc(char *buf, size_t bSize, Variable *var);
 char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins);

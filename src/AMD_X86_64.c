@@ -4,7 +4,8 @@
 #include "cpu.h"
 #include "AMD_X86_64.h"
 
-char *stackAllocateAMD_X86_64() {
+char *stackAllocateAMD_X86_64(enum cpuType cpu) {
+	CPU = cpu;
 	/*auto to 16*/
 	if(CPU==AMD_X86_64) {
 		char *ret = calloc(1024, sizeof(char));
@@ -262,6 +263,7 @@ char *ifStateConvert(AsmOut *out, Instruction *ins) {
 char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 	if(ins.instruction==NULL) return NULL;
 	if(!strcmp(ins.instruction, "\n")) return NULL;
+	CPU = out->parser->fData->cpu;
 	int args = ins.argLen;
 	int outlen = args*DEFMAXFSIZE;
 	char outBuf[outlen];

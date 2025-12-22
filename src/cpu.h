@@ -33,7 +33,7 @@ static enum cpuType CPU =
 	ARMv7;
 #elif defined __ARM_ARCH_8A__ || __ARM_ARCH_81A__ \
 		|| __ARM_ARCH_82A__
-	ARMv8
+	ARMv8;
 #endif
 #endif
 #elif defined __i386__ || _M_IX86 || \
@@ -70,5 +70,19 @@ static enum cpuType CPU =
 		case SZ_IBM: str="System/370-90";break; \
 		case MIPS: str="MIPS";break; \
 		case HPPA: str="HPPA";break;};
+
+#define SETCPUENUM(_str) { \
+		if(!strcmp(_str, "ALPHA")) CPU = ALPHA; \
+		else if(!strcmp(_str, "AMD_X86_64")) CPU = AMD_X86_64; \
+		else if(!strcmp(_str, "ARM_MAC")) CPU = ARM_MAC; \
+		else if(!strcmp(_str, "ARMv7")) CPU = ARMv7; \
+		else if(!strcmp(_str, "ARMv8")) CPU = ARMv8; \
+		else if(!strcmp(_str, "I386")) CPU = I386; \
+		else if(!strcmp(_str, "POWERPC")) CPU = POWERPC; \
+		else if(!strcmp(_str, "RS6000")) CPU = RS6000; \
+		else if(!strcmp(_str, "SPARC")) CPU = SPARC; \
+		else if(!strcmp(_str, "SZ_IBM")) CPU = SZ_IBM; \
+		else if(!strcmp(_str, "MIPS")) CPU = MIPS; \
+		else if(!strcmp(_str, "HPPA")) CPU = HPPA;} 
 
 #endif

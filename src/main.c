@@ -8,13 +8,12 @@
 #include "asmout.h"
 #include "cpu.h"
 
+wData *data = NULL;
+
 int argCheckOption(struct ArgparseParser *parser,
 		char *option1, char *option2);
-
 void runArgParsing(wData *data);
-
 void initArgParseArgs(wData *data, int argc, char *argv[]); 
-
 void compileFile(wData *data); 
 
 int main(int argc, char **argv) {
@@ -22,29 +21,30 @@ int main(int argc, char **argv) {
 	clock_t start, end;
 	start = clock();
 
-	wData data;
-	data.main = NULL;
-	data.fileName = NULL;
-	data.includedFiles = NULL;
-	data.includeSize = 0;
-	data.argParser = (struct ArgparseParser){0};
-	data.outputFile = NULL;
-	data.ccFlags = NULL;
-	data.flags = NULL;
-	data.flagLen = 0;
-	data.cap = 0;
-	data.ldflags = NULL;
-	data.KEEPASM = 0;
-	data.USEINFO = 0;
-	data.USELD = 0;
-	data.COBJ = 0;
-	initArgParseArgs(&data, argc, argv);
-	runArgParsing(&data);	
+	data = calloc(1, sizeof(wData));
+	data->main = NULL;
+	data->fileName = NULL;
+	data->includedFiles = NULL;
+	data->includeSize = 0;
+	data->argParser = (struct ArgparseParser){0};
+	data->outputFile = NULL;
+	data->ccFlags = NULL;
+	data->flags = NULL;
+	data->flagLen = 0;
+	data->cap = 0;
+	data->ldflags = NULL;
+	data->KEEPASM = 0;
+	data->USEINFO = 0;
+	data->USELD = 0;
+	data->COBJ = 0;
+	initArgParseArgs(data, argc, argv);
+	runArgParsing(data);
+	data->cpu = CPU;
 
-	WASSERT(data.main!=NULL,
+	WASSERT(data->main!=NULL,
 			"FATAL:: No File provided\n");
 
-	struct parserData *p = initParser(&data);
+	struct parserData *p = initParser(data);
 	parseProgram(p);
 
 	AsmOut output;
@@ -54,11 +54,11 @@ int main(int argc, char **argv) {
 	/*freeParser(p);
 	 * This breaks on FreeBSD so I'm not gonna worry about it for now*/
 	freeAsm(&output);
-	argparse_free(data.argParser);
-	if(data.main!=NULL) fclose(data.main);
+	argparse_free(data->argParser);
+	if(data->main!=NULL) fclose(data->main);
 
 	end = clock();
-	char *cpu_str;
+	char *cpu_str = NULL;
 	GETCPUSTR(CPU, cpu_str);
 	char timeBuf[100];
 	snprintf(timeBuf, sizeof(timeBuf), "Compile time: %fs, %fms on %s", 
@@ -68,7 +68,8 @@ int main(int argc, char **argv) {
 
 	WERROR_EXIT();
 
-	compileFile(&data);
+	compileFile(data);
+	free(data);
 	return 0;
 }
 
@@ -77,6 +78,26 @@ int argCheckOption(struct ArgparseParser *parser,
 	if(argparse_option_exists(*parser, option1)!=ARGPARSE_NOT_FOUND ||
 			argparse_option_exists(*parser, option2)!=ARGPARSE_NOT_FOUND) return 1;
 	return 0;
+}
+
+void outputCPUHelp() {
+	char *cpuHelp = "WELLANG CPU OPTIONS:\n\n"
+		"Architectures with \"(TODO)\" are not yet implemented with Wellang.\n"
+		"Usage Example: well foo.well --arch AMD_X86_64\n"
+		"AMD_X86_64   | Intel/AMD x86_64 architecture\n"
+		"I386         | 32-bit Intel/AMD x86 architecture\n"
+		"ARMv8        | aarch64 architecture\n"
+		"ARM_MAC      | Outputs the same as ARMv8\n"
+		"ARMv7  (TODO)| 32-bit aarch architecture\n"
+		"POWERPC(TODO)| 32-bit and 64-bit ppc architecture\n"
+		"RS6000 (TODO)| IBM POWER architecture\n"
+		"ALPHA        | Alpha architecture\n"
+		"SZ_IBM (TODO)| IBM s370/390 architecture\n"
+		"SPARC  (TODO)| Sun Sparc architecture\n"
+		"MIPS   (TODO)| Mips architecture\n"
+		"HPPA   (TODO)| HP Precision Architecture\n";
+	WLOG(INFO, cpuHelp);
+	exit(0);
 }
 
 void runArgParsing(wData *data) {
@@ -88,7 +109,8 @@ void runArgParsing(wData *data) {
     "--assembly  | -a: Keep the assembly output file\n"
     "--info      | -i: Shows extra debug information at compile time\n\n"
     "--use-gnuld | -use-ld: Use gnu linker rather than gcc\n"
-    "--ldflags   | -ldflags: Set your gnu linker flags (ex: wesm main.well -use-ld -ldflags '-T link.ld')\n";
+    "--ldflags   | -ldflags: Set your gnu linker flags (ex: wesm main.well -use-ld -ldflags '-T link.ld')\n"
+	"--arch      | -arch: Set the output architecture, this requires your toolchain to support cross-compilation";
 
 	if(argCheckOption(&data->argParser, "--help", "-h")) {
 		WLOG(INFO, help);
@@ -122,6 +144,21 @@ void runArgParsing(wData *data) {
 				!strcmp(data->argParser.argv[i], "--cflags")) {
 				if(i+1<data->argParser.argc) {
 					data->ccFlags = data->argParser.argv[i+1];
+					break;
+				}
+			}
+		}	
+	}
+
+	if(argCheckOption(&data->argParser, "--arch", "-arch")) {
+		int i;
+		for(i=0;i<data->argParser.argc;i++) {
+			if(!strcmp(data->argParser.argv[i], "-arch")||
+				!strcmp(data->argParser.argv[i], "--arch")) {
+				if(i+1<data->argParser.argc) {
+					if(!strcmp(data->argParser.argv[i+1], "help"))
+						outputCPUHelp();
+					SETCPUENUM(data->argParser.argv[i+1]); 
 					break;
 				}
 			}

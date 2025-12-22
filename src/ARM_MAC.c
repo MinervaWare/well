@@ -17,7 +17,8 @@ MacRegData *macRegData = NULL;
  * Stack initialization is going to be large and unoptimized to local variables/structs.
  * This is because
  * */
-char *stackAllocateARM_MAC() {
+char *stackAllocateARM_MAC(enum cpuType cpu) {
+	CPU = cpu;
 	/*auto to 16*/
 	char *ret = calloc(1024, sizeof(char));
 	sprintf(ret, "\tsub sp, sp, #32\n\tstp x29, x30, [sp, #32]\n\tadd x29, sp, #32\n");
@@ -276,6 +277,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 		macRegData = calloc(1, sizeof(MacRegData));
 		macRegData->prevRegType = 'x';
 	}
+	CPU = out->parser->fData->cpu;
 	int args = ins.argLen;
 	int outlen = args*DEFMAXFSIZE;
 	char outBuf[outlen];

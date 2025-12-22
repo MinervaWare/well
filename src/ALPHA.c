@@ -2,7 +2,8 @@
 
 #include "ALPHA.h"
 
-char *stackAllocateALPHA() {
+char *stackAllocateALPHA(enum cpuType cpu) {
+	CPU = cpu;
 	char *ret = calloc(1024, sizeof(char));
 	sprintf(ret, "\tlda $30, -16($30)\n"
 				 "\tstq $26, 0($30)\n"
@@ -108,6 +109,7 @@ char *triArgInsRDestALPHA(char *ins, Instruction *wins) {
 char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 	if(ins.instruction==NULL) return NULL;
 	if(!strcmp(ins.instruction, "\n")) return NULL;
+	CPU = out->parser->fData->cpu;
 	int args = ins.argLen;
 	int outlen = args*DEFMAXFSIZE;
 	char outBuf[outlen];

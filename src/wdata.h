@@ -3,6 +3,7 @@
 #define WDATA_H
 
 #include "util.h"
+#include "cpu.h"
 #include "../include/argparse.h"
 
 typedef struct {
@@ -20,6 +21,7 @@ typedef struct {
 	int flagLen, cap;
 
 	char *ldflags;
+	enum cpuType cpu;
 } wData;
 
 #endif

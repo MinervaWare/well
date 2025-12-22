@@ -4,6 +4,7 @@
 #include "util.h"
 #include "asmout.h"
 #include "parser.h"
+#include "cpu.h"
 
 enum registersARM_MAC {
 	X0=0,
@@ -21,7 +22,7 @@ typedef struct {
 	char prevRegType;
 } MacRegData;
 
-char *stackAllocateARM_MAC();
+char *stackAllocateARM_MAC(enum cpuType cpu);
 char *stackDeallocateARM_MAC();
 void ARM_MACGetLVAlloc(char *buf, int bSize, Variable *var);
 char *convertInstructionARM_MAC(AsmOut *out, Instruction ins);

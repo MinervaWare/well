@@ -243,12 +243,12 @@ char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 
 char *getStackAllocation() {
 	switch(CPU) {
-		case ALPHA: return stackAllocateALPHA();
+		case ALPHA: return stackAllocateALPHA(CPU);
 		case I386:
-		case AMD_X86_64: return stackAllocateAMD_X86_64();
+		case AMD_X86_64: return stackAllocateAMD_X86_64(CPU);
 		case ITANIUM_64: break; /*TODO*/
 		case ARMv8:
-		case ARM_MAC: return stackAllocateARM_MAC();
+		case ARM_MAC: return stackAllocateARM_MAC(CPU);
 		case ARMv7: break; /*TODO*/
 		case POWERPC: break; /*TODO*/
 		case RS6000: break; /*TODO*/
@@ -576,6 +576,7 @@ void initAsmOut(struct parserData *parser, AsmOut *output) {
 	if(output==NULL) output = calloc(1, sizeof(AsmOut));
 	output->parser = parser;
 	output->functions = calloc(parser->totalFunctions, sizeof(Function));
+	CPU = parser->fData->cpu;
 
 	char *fileName = strtok(parser->fData->fileName, ".");
 	strcat(fileName, ".s");
