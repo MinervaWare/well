@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "cpu.h"
-#include "AMD_X86_64.h"
+#include "AMDX8664.h"
 
 char *stackAllocateAMD_X86_64(enum cpuType cpu) {
 	CPU = cpu;
@@ -87,8 +87,8 @@ void AMD_X86_64GetLVAlloc(char *buf, size_t bSize, Variable *var) {
 }
 
 char *initLocalVariables(Function *func) {
-	if(func==NULL) return NULL;
 	char *res = NULL;
+	if(func==NULL) return NULL;
 
 	return res;
 }
@@ -136,11 +136,11 @@ char *mapRegisterAMD_X86_64(char *reg) {
 }
 
 char *getCurrentVar(struct parserData *parser, Instruction *ins, int argSpot) {
-	if(parser==NULL||ins==NULL) return NULL;
 	char *res = NULL;
 	Variable *v = NULL;
-	v = getVarFrom(parser, ins->arguments[argSpot]);
 	char asmVName[1024];
+	if(parser==NULL||ins==NULL) return NULL;
+	v = getVarFrom(parser, ins->arguments[argSpot]);
 	if(v!=NULL) {
 		switch(v->type) {
 			case STRING: snprintf(asmVName, sizeof(asmVName),
@@ -218,6 +218,7 @@ char *ifStateConvert(AsmOut *out, Instruction *ins) {
 	char *val2 = NULL;
 	char *scopeName = ins->arguments[0];
 	char *op = getIfStateCmp(ins->instruction);
+	char *cmp = "cmpq";
 	if(checkRegister(ins->arguments[1])) {
 		char *AMDReg = mapRegisterAMD_X86_64(ins->arguments[1]);
 		val1 = calloc(strlen(AMDReg)+128, sizeof(char));
@@ -240,12 +241,11 @@ char *ifStateConvert(AsmOut *out, Instruction *ins) {
 		strcpy(val2, var);
 		free(var); var = NULL;
 	}
-	char *cmp = "cmpq";
 	if(CPU==I386) cmp = "cmpl";
 	snprintf(outBuf, sizeof(outBuf), "\t%s %s, %s\n"
-									 "\t%s .%s\n"
-									 ".%s_cont:\n",
-									 cmp, val2, val1, op, scopeName, scopeName);
+			"\t%s .%s\n"
+			".%s_cont:\n",
+			cmp, val2, val1, op, scopeName, scopeName);
 	if(val1) {free(val1);val1=NULL;}
 	if(val2) {free(val2);val2=NULL;}
 	ret = calloc(strlen(outBuf)+1, sizeof(char));
@@ -261,21 +261,22 @@ char *ifStateConvert(AsmOut *out, Instruction *ins) {
  * */
 
 char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
+	int args = ins.argLen;
+	int outlen = args*DEFMAXFSIZE;
+	char *outBuf = calloc(outlen, sizeof(char));
+	char *ret;
+	int i;
 	if(ins.instruction==NULL) return NULL;
 	if(!strcmp(ins.instruction, "\n")) return NULL;
 	CPU = out->parser->fData->cpu;
-	int args = ins.argLen;
-	int outlen = args*DEFMAXFSIZE;
-	char outBuf[outlen];
 	memset(outBuf, 0, outlen*sizeof(char));
-	int i;
 
 	for(i=0;i<args;i++) WTRIM(ins.arguments[i]);
 
 	/*Special instructions*/
 	/*Inline - Drops direct asm instructions into the output*/
 	if(!strcmp(ins.instruction, "inline")) { 
-		snprintf(outBuf, sizeof(outBuf), "\t%s\n", dumpInlineASM(&ins));
+		snprintf(outBuf, sizeof(char)*outlen, "\t%s\n", dumpInlineASM(&ins));
 
 	/*
 	 * 1 argument instructions
@@ -286,28 +287,28 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 		 * */
 		if(!strcmp(ins.instruction, "call")) {
     	    if(ins.arguments[0]!=NULL)
-    	        snprintf(outBuf, sizeof(outBuf), "\tcall %s\n", ins.arguments[0]);
+    	        snprintf(outBuf, sizeof(char)*outlen, "\tcall %s\n", ins.arguments[0]);
 		/*
 		 * Return: return~ 0
 		 * */
 		} else if(!strcmp(ins.instruction, "return")) {
 			if(ins.arguments[0]!=NULL) {
 				char *reg = NULL;
+				char *dealloc = stackDeallocateAMD_X86_64();
 				if(strlen(ins.arguments[0])==0) ins.arguments[0] = "0";
 				else reg = mapRegisterAMD_X86_64(ins.arguments[0]);
-				char *dealloc = stackDeallocateAMD_X86_64();
 				
 				if(reg!=NULL) {
 					if(CPU==AMD_X86_64) {
-						snprintf(outBuf, sizeof(outBuf), "\tmovq %%%s, %%rax\n%s\tret\n",
+						snprintf(outBuf, sizeof(char)*outlen, "\tmovq %%%s, %%rax\n%s\tret\n",
 								reg, dealloc); 
 					} else {
-						snprintf(outBuf, sizeof(outBuf), "\tmovl %%%s, %%eax\n%s\tret\n",
+						snprintf(outBuf, sizeof(char)*outlen, "\tmovl %%%s, %%eax\n%s\tret\n",
 								reg, dealloc);
 					}
 				} else {
-						snprintf(outBuf, sizeof(outBuf), "\tmovl $%s, %%eax\n%s\tret\n",
-								ins.arguments[0], dealloc);
+					snprintf(outBuf, sizeof(char)*outlen, "\tmovl $%s, %%eax\n%s\tret\n",
+							ins.arguments[0], dealloc);
 				}
 				free(dealloc);
 			}
@@ -322,6 +323,7 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 		if(!strcmp(ins.instruction, "move")) {
 			char *val1 = NULL;
 			char *val2 = NULL;
+			char *mov = "movq";
 			if(checkRegister(ins.arguments[0])) {
 				char *AMDReg = mapRegisterAMD_X86_64(ins.arguments[0]);
 				val1 = calloc(strlen(AMDReg)+128, sizeof(char));
@@ -344,12 +346,11 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 				strcpy(val2, var);
 				free(var); var = NULL;
 			}
-			char *mov = "movq";
 			if(CPU==AMD_X86_64) {
-				snprintf(outBuf, sizeof(outBuf),
+				snprintf(outBuf, sizeof(char)*outlen,
 						"\t%s %s,%s\n", mov, val1, val2);
 			} else if(CPU==I386) {
-				snprintf(outBuf, sizeof(outBuf),
+				snprintf(outBuf, sizeof(char)*outlen,
 						"\tmovl %s,%s\n", val1, val2);
 			}
 			if(val1!=NULL) {free(val1);val1=NULL;}
@@ -368,15 +369,15 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 				char *src = mapRegisterAMD_X86_64(ins.arguments[1]);
 				if(!strcmp(src,dest)) {
 					if(CPU==AMD_X86_64) 
-						snprintf(outBuf, sizeof(outBuf), "\tnotq %%%s\n", dest);
+						snprintf(outBuf, sizeof(char)*outlen, "\tnotq %%%s\n", dest);
 					else if(CPU==I386) 
-						snprintf(outBuf, sizeof(outBuf), "\tnotl %%%s\n", dest);
+						snprintf(outBuf, sizeof(char)*outlen, "\tnotl %%%s\n", dest);
 				} else {
 					if(CPU==AMD_X86_64) {
-						snprintf(outBuf, sizeof(outBuf), "\tmovq %%%s, %%%s\n\tnotq %%%s\n",
+						snprintf(outBuf, sizeof(char)*outlen, "\tmovq %%%s, %%%s\n\tnotq %%%s\n",
 								src, dest, dest);
 					} else if(CPU==I386) {
-						snprintf(outBuf, sizeof(outBuf), "\tmovl %%%s, %%%s\n\tnotl %%%s\n",
+						snprintf(outBuf, sizeof(char)*outlen, "\tmovl %%%s, %%%s\n\tnotl %%%s\n",
 								src, dest, dest);
 					}
 				}
@@ -396,7 +397,7 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 		 * */
 		if(getIfStateCmp(ins.instruction)!=NULL) {
 			char *conv = ifStateConvert(out, &ins);
-			snprintf(outBuf, sizeof(outBuf), "%s", conv);
+			snprintf(outBuf, sizeof(char)*outlen, "%s", conv);
 			free(conv); conv = NULL;
 
 		/*
@@ -415,13 +416,13 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 				char *s2 = mapRegisterAMD_X86_64(ins.arguments[2]);
 				if((!strcmp(dest,s1)&&!strcmp(dest,s2))||!strcmp(s1,s2)) {
 					/*If the are the same it's always 1*/
-					snprintf(outBuf, sizeof(outBuf), "\tmovl $1, %%%s\n", dest);
+					snprintf(outBuf, sizeof(char)*outlen, "\tmovl $1, %%%s\n", dest);
 				} else {
 					if(CPU==AMD_X86_64) {
-						snprintf(outBuf, sizeof(outBuf), "\tmovq %%%s, %%%s\n\tandq %%%s, %%%s\n",
+						snprintf(outBuf, sizeof(char)*outlen, "\tmovq %%%s, %%%s\n\tandq %%%s, %%%s\n",
 								s1, dest, s2, dest);
 					} else if(CPU==I386) {
-						snprintf(outBuf, sizeof(outBuf), "\tmovl %%%s, %%%s\n\tandl %%%s, %%%s\n",
+						snprintf(outBuf, sizeof(char)*outlen, "\tmovl %%%s, %%%s\n\tandl %%%s, %%%s\n",
 								s1, dest, s2, dest);
 
 					}
@@ -439,14 +440,14 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 				char *s2 = mapRegisterAMD_X86_64(ins.arguments[2]);
 				if((!strcmp(dest,s1)&&!strcmp(dest,s2))||!strcmp(s1,s2)) {
 					/*If the are the same it's always 1*/
-					if(CPU==AMD_X86_64) snprintf(outBuf, sizeof(outBuf), "\tmovq $1, %%%s\n", dest);
-					else if(CPU==I386) snprintf(outBuf, sizeof(outBuf), "\tmovl $1, %%%s\n", dest);
+					if(CPU==AMD_X86_64) snprintf(outBuf, sizeof(char)*outlen, "\tmovq $1, %%%s\n", dest);
+					else if(CPU==I386) snprintf(outBuf, sizeof(char)*outlen, "\tmovl $1, %%%s\n", dest);
 				} else {
 					if(CPU==AMD_X86_64) {
-						snprintf(outBuf, sizeof(outBuf), "\tmovq %%%s, %%%s\n\torq %%%s, %%%s\n",
+						snprintf(outBuf, sizeof(char)*outlen, "\tmovq %%%s, %%%s\n\torq %%%s, %%%s\n",
 								s1, dest, s2, dest);
 					} else if(CPU==I386) {
-						snprintf(outBuf, sizeof(outBuf), "\tmovl %%%s, %%%s\n\torl %%%s, %%%s\n",
+						snprintf(outBuf, sizeof(char)*outlen, "\tmovl %%%s, %%%s\n\torl %%%s, %%%s\n",
 								s1, dest, s2, dest);
 					}
 				} 
@@ -463,15 +464,15 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 				char *s2 = mapRegisterAMD_X86_64(ins.arguments[2]);
 				if((!strcmp(dest,s1)&&!strcmp(dest,s2))||!strcmp(s1,s2)) {
 					/*If the are the same it's always 0*/
-					if(CPU==AMD_X86_64) snprintf(outBuf, sizeof(outBuf), "\tmovq $0, %%%s\n", dest);
-					else if(CPU==I386) snprintf(outBuf, sizeof(outBuf), "\tmovl $0, %%%s\n", dest);
+					if(CPU==AMD_X86_64) snprintf(outBuf, sizeof(char)*outlen, "\tmovq $0, %%%s\n", dest);
+					else if(CPU==I386) snprintf(outBuf, sizeof(char)*outlen, "\tmovl $0, %%%s\n", dest);
 				} else {
 					if(CPU==AMD_X86_64) {
-						snprintf(outBuf, sizeof(outBuf), 
+						snprintf(outBuf, sizeof(char)*outlen, 
 								"\tmovq %%%s, %%%s\n\torq %%%s, %%%s\n\tnotq %%%s\n",
 								s1, dest, s2, dest, dest);
 					} else if(CPU==I386) {
-						snprintf(outBuf, sizeof(outBuf), 
+						snprintf(outBuf, sizeof(char)*outlen, 
 								"\tmovl %%%s, %%%s\n\torl %%%s, %%%s\n\tnotl %%%s\n",
 								s1, dest, s2, dest, dest);
 					}
@@ -490,15 +491,15 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 				char *s2 = mapRegisterAMD_X86_64(ins.arguments[2]);
 				if((!strcmp(dest,s1)&&!strcmp(dest,s2))||!strcmp(s1,s2)) {
 					/*If the are the same it's always 0*/
-					if(CPU==AMD_X86_64) snprintf(outBuf, sizeof(outBuf), "\tmovq $0, %%%s\n", dest);
-					else if(CPU==I386) snprintf(outBuf, sizeof(outBuf), "\tmovl $0, %%%s\n", dest);
+					if(CPU==AMD_X86_64) snprintf(outBuf, sizeof(char)*outlen, "\tmovq $0, %%%s\n", dest);
+					else if(CPU==I386) snprintf(outBuf, sizeof(char)*outlen, "\tmovl $0, %%%s\n", dest);
 				} else {
 					if(CPU==AMD_X86_64) {
-						snprintf(outBuf, sizeof(outBuf), 
+						snprintf(outBuf, sizeof(char)*outlen, 
 								"\tmovq %%%s, %%%s\n\tandq %%%s, %%%s\n\tnotq %%%s\n",
 								s1, dest, s2, dest, dest);
 					} else if(CPU==I386) {
-						snprintf(outBuf, sizeof(outBuf), 
+						snprintf(outBuf, sizeof(char)*outlen, 
 								"\tmovl %%%s, %%%s\n\tandl %%%s, %%%s\n\tnotl %%%s\n",
 								s1, dest, s2, dest, dest);
 
@@ -512,7 +513,7 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 		 * */
 		} else if(!strcmp(ins.instruction, "xor")) {
 			char *out = triArgInsRDest("xor", &ins);
-			snprintf(outBuf, sizeof(outBuf), "%s", out);
+			snprintf(outBuf, sizeof(char)*outlen, "%s", out);
 			free(out);
 		}
 
@@ -524,7 +525,7 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 		 * */
 		else if(!strcmp(ins.instruction, "add")) {
 			char *out = triArgInsRDest("add", &ins);
-			snprintf(outBuf, sizeof(outBuf), "%s", out);
+			snprintf(outBuf, sizeof(char)*outlen, "%s", out);
 			free(out);
 		}
 
@@ -533,7 +534,7 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 		 * */
 		else if(!strcmp(ins.instruction, "sub")) {
 			char *out = triArgInsRDest("sub", &ins);
-			snprintf(outBuf, sizeof(outBuf), "%s", out);
+			snprintf(outBuf, sizeof(char)*outlen, "%s", out);
 			free(out);
 		} 
 
@@ -542,7 +543,7 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 		 * */
 		else if(!strcmp(ins.instruction, "mul")) {
 			char *out = triArgInsRDest("imul", &ins);
-			snprintf(outBuf, sizeof(outBuf), "%s", out);
+			snprintf(outBuf, sizeof(char)*outlen, "%s", out);
 			free(out);
 		}
 
@@ -559,15 +560,15 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 				char *s2 = mapRegisterAMD_X86_64(ins.arguments[2]);
 				if((!strcmp(dest,s1)&&!strcmp(dest,s2))||!strcmp(s1,s2)) {
 					/*If the are the same it's always 1*/
-					if(CPU==AMD_X86_64) snprintf(outBuf, sizeof(outBuf), "\tmovq $1, %%%s\n", dest);
-					else if(CPU==I386) snprintf(outBuf, sizeof(outBuf), "\tmovl $1, %%%s\n", dest);
+					if(CPU==AMD_X86_64) snprintf(outBuf, sizeof(char)*outlen, "\tmovq $1, %%%s\n", dest);
+					else if(CPU==I386) snprintf(outBuf, sizeof(char)*outlen, "\tmovl $1, %%%s\n", dest);
 				} else {
 					if(CPU==AMD_X86_64) {
-						snprintf(outBuf, sizeof(outBuf), 
+						snprintf(outBuf, sizeof(char)*outlen, 
 								"\tmovq %%%s, %%rax\n\tcqto\n\tidivq %%%s\n\tmovq %%rax, %%%s\n",
 								s1, s2, dest);
 					} else if(CPU==I386) {
-						snprintf(outBuf, sizeof(outBuf), 
+						snprintf(outBuf, sizeof(char)*outlen, 
 								"\tmovl %%%s, %%eax\n\tcltd\n\tidivl %%%s\n\tmovl %%eax, %%%s\n",
 								s1, s2, dest);
 
@@ -587,15 +588,15 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 				char *s2 = mapRegisterAMD_X86_64(ins.arguments[2]);
 				if((!strcmp(dest,s1)&&!strcmp(dest,s2))||!strcmp(s1,s2)) {
 					/*If the are the same it's always 0*/
-					if(CPU==AMD_X86_64) snprintf(outBuf, sizeof(outBuf), "\tmovq $0, %%%s\n", dest);
-					else if(CPU==I386) snprintf(outBuf, sizeof(outBuf), "\tmovl $0, %%%s\n", dest);
+					if(CPU==AMD_X86_64) snprintf(outBuf, sizeof(char)*outlen, "\tmovq $0, %%%s\n", dest);
+					else if(CPU==I386) snprintf(outBuf, sizeof(char)*outlen, "\tmovl $0, %%%s\n", dest);
 				} else {
 					if(CPU==AMD_X86_64) {
-						snprintf(outBuf, sizeof(outBuf), 
+						snprintf(outBuf, sizeof(char)*outlen, 
 								"\tmovq %%%s, %%rax\n\tcqto\n\tidivq %%%s\n\tmovq %%rdx, %%%s\n",
 								s1, s2, dest);
 					} else if(CPU==I386) {
-						snprintf(outBuf, sizeof(outBuf), 
+						snprintf(outBuf, sizeof(char)*outlen, 
 								"\tmovl %%%s, %%eax\n\tcltd\n\tidivl %%%s\n\tmovl %%edx, %%%s\n",
 								s1, s2, dest);
 
@@ -605,7 +606,8 @@ char *convertInstructionAMD_X86_64(AsmOut *out, Instruction ins) {
 		}
 	}
 
-	char *ret = calloc(strlen(outBuf)+1, sizeof(char));
-    strcpy(ret, outBuf);
+	ret = calloc(strlen(outBuf)+1, sizeof(char));
+	strcpy(ret, outBuf);
+	free(outBuf);
 	return ret;
 }

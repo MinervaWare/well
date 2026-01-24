@@ -19,6 +19,11 @@ void compileFile(wData *data);
 int main(int argc, char **argv) {
 
 	clock_t start, end;
+	struct parserData *p;
+	char *cpuStr = NULL;
+	char timeBuf[100];
+	AsmOut output;
+
 	start = clock();
 
 	data = calloc(1, sizeof(wData));
@@ -26,7 +31,6 @@ int main(int argc, char **argv) {
 	data->fileName = NULL;
 	data->includedFiles = NULL;
 	data->includeSize = 0;
-	data->argParser = (struct ArgparseParser){0};
 	data->outputFile = NULL;
 	data->ccFlags = NULL;
 	data->flags = NULL;
@@ -44,10 +48,9 @@ int main(int argc, char **argv) {
 	WASSERT(data->main!=NULL,
 			"FATAL:: No File provided\n");
 
-	struct parserData *p = initParser(data);
+	p = initParser(data);
 	parseProgram(p);
 
-	AsmOut output;
 	initAsmOut(p, &output);
 	convertToAsm(&output);
 
@@ -58,12 +61,10 @@ int main(int argc, char **argv) {
 	if(data->main!=NULL) fclose(data->main);
 
 	end = clock();
-	char *cpu_str = NULL;
-	GETCPUSTR(CPU, cpu_str);
-	char timeBuf[100];
+	GETCPUSTR(CPU, cpuStr);
 	snprintf(timeBuf, sizeof(timeBuf), "Compile time: %fs, %fms on %s", 
 			((double)(end-start) / CLOCKS_PER_SEC), 
-			(((double)(end-start) / CLOCKS_PER_SEC) * 1000), cpu_str);
+			(((double)(end-start) / CLOCKS_PER_SEC) * 1000), cpuStr);
 	WLOG(INFO, timeBuf);
 
 	WERROR_EXIT();
@@ -80,40 +81,47 @@ int argCheckOption(struct ArgparseParser *parser,
 	return 0;
 }
 
+#define HELPMLEN 1024
 void outputCPUHelp() {
-	char *cpuHelp = "WELLANG CPU OPTIONS:\n\n"
+	char *cpuHelp = calloc(HELPMLEN, sizeof(char));
+	snprintf(cpuHelp, sizeof(char)*HELPMLEN,
+		"WELLANG CPU OPTIONS:\n\n"
 		"Architectures with \"(TODO)\" are not yet implemented with Wellang.\n"
 		"Usage Example: well foo.well --arch AMD_X86_64\n"
-		"AMD_X86_64   | Intel/AMD x86_64 architecture\n"
+		"AMD_X86_64   | Intel/AMD x86_64 architecture\n%s",
 		"I386         | 32-bit Intel/AMD x86 architecture\n"
 		"ARMv8        | aarch64 architecture\n"
 		"ARM_MAC      | Outputs the same as ARMv8\n"
 		"ARMv7  (TODO)| 32-bit aarch architecture\n"
-		"POWERPC(TODO)| 32-bit and 64-bit ppc architecture\n"
+		"POWERPC(TODO)| 32-bit and 64-bit ppc architecture\n%s"
 		"RS6000 (TODO)| IBM POWER architecture\n"
 		"ALPHA        | Alpha architecture\n"
 		"SZ_IBM (TODO)| IBM s370/390 architecture\n"
 		"SPARC  (TODO)| Sun Sparc architecture\n"
 		"MIPS   (TODO)| Mips architecture\n"
-		"HPPA   (TODO)| HP Precision Architecture\n";
+		"HPPA   (TODO)| HP Precision Architecture\n");
 	WLOG(INFO, cpuHelp);
+	free(cpuHelp);
 	exit(0);
 }
 
 void runArgParsing(wData *data) {
-	char *help = "WELLANG CLI HELP:\n\n"
-    "--help      | -h: Need help? Use -h\n"
-    "--output    | -o: Set name of executable output\n"
-	"--cobject   | -c: Compiler to object(.o) file.\n"
-    "--cflags    | -cf: Set your cflags (ex: well main.well -cc '-g -lpthread')\n"
-    "--assembly  | -a: Keep the assembly output file\n"
-    "--info      | -i: Shows extra debug information at compile time\n\n"
-    "--use-gnuld | -use-ld: Use gnu linker rather than gcc\n"
-    "--ldflags   | -ldflags: Set your gnu linker flags (ex: wesm main.well -use-ld -ldflags '-T link.ld')\n"
-	"--arch      | -arch: Set the output architecture, this requires your toolchain to support cross-compilation";
+	char *help = calloc(HELPMLEN, sizeof(char)); 
+	snprintf(help, sizeof(char)*HELPMLEN,
+			"WELLANG CLI HELP:\n\n"
+			"--help      | -h: Need help? Use -h\n"
+			"--output    | -o: Set name of executable output\n"
+			"--cobject   | -c: Compiler to object(.o) file.\n%s",
+			"--cflags    | -cf: Set your cflags (ex: well main.well -cc '-g -lpthread')\n"
+			"--assembly  | -a: Keep the assembly output file\n"
+			"--info      | -i: Shows extra debug information at compile time\n\n"
+			"--use-gnuld | -use-ld: Use gnu linker rather than gcc\n%s",
+			"--ldflags   | -ldflags: Set your gnu linker flags (ex: wesm main.well -use-ld -ldflags '-T link.ld')\n"
+			"--arch      | -arch: Set the output architecture, this requires your toolchain to support cross-compilation");
 
 	if(argCheckOption(&data->argParser, "--help", "-h")) {
 		WLOG(INFO, help);
+		free(help);
 		exit(0);
 	}
 
@@ -164,10 +172,11 @@ void runArgParsing(wData *data) {
 			}
 		}	
 	}
-
+	free(help);
 }
 
 void initArgParseArgs(wData *data, int argc, char **argv) {
+	int i;
 	data->argParser = argparse_init("well", argc, argv);
 	data->KEEPASM=0;
 	data->USEINFO=0;
@@ -180,13 +189,15 @@ void initArgParseArgs(wData *data, int argc, char **argv) {
 	data->cap=1;
 	data->flags = calloc(1, sizeof(char *));
 
-	int i;
 	for(i=0;i<argc;i++) {
 		if(strstr(argv[i], ".well")) {
+			char *buf;
 			data->main = fopen(argv[i], "r");
-			WASSERT(data->main!=NULL,
-					"FATAL:: Failed to open file: %s", argv[i]);
+			buf = calloc(128, sizeof(char));
+			snprintf(buf, "FATAL:: Failed to open file: %s", argv[i]);
+			WASSERT(data->main!=NULL, buf);
 			data->fileName = argv[i];
+			free(buf);
 			break;
 		}
 }
@@ -211,8 +222,11 @@ void initArgParseArgs(wData *data, int argc, char **argv) {
 }
 
 void cleanupAsm(wData *data, char *asmOut) {
+	char *args[3];
 	if(data->KEEPASM) return;
-	char *args[] = {"rm", asmOut, NULL};
+	args[0] = "rm";
+	args[1] = asmOut;
+	args[2] = NULL;
 	execvp("rm", args);
 }
 
@@ -220,7 +234,7 @@ void tokenizeCCFlags(wData *data) {
 	char *token = strtok(data->ccFlags, " ");
 	for(;token!=NULL;data->flagLen++) {
 		data->flags[data->flagLen] = calloc(strlen(token)+1, sizeof(char *));
-        strcpy(data->flags[data->flagLen], token);
+		strcpy(data->flags[data->flagLen], token);
 		data->cap++;
 		data->flags = (char **)realloc(data->flags, sizeof(char *)*data->cap);
 		token = strtok(NULL, " ");
@@ -230,6 +244,10 @@ void tokenizeCCFlags(wData *data) {
 
 void compileFile(wData *data) {
 	char *fileDirect = strtok(data->fileName, ".");
+	char *args[64];
+	int i;
+	pid_t pid;
+	for(i=0;i<64;i++) args[i] = NULL;
 	strcat(fileDirect, ".s");
 	if(data->USELD) return;
 	if(data->outputFile!=NULL) {
@@ -239,7 +257,10 @@ void compileFile(wData *data) {
         strcpy(data->outputFile, buf);
 	}
 	tokenizeCCFlags(data);
-	char *args[] = {"gcc", fileDirect, "-c", NULL};
+	args[0] = "gcc";
+	args[1] = fileDirect;
+	args[2] = "-c";
+	args[3] = NULL;
 	/*if(data->ccFlags==NULL) args[2] = ""; */
 	/*if(data->COBJ) args[3] = "-c";*/
 	/*if(data->outputFile==NULL) args[4] = NULL;*/
@@ -247,22 +268,24 @@ void compileFile(wData *data) {
 		char *buf = calloc(256, sizeof(char));
 		int i;
 		for(i=0;i<ARRLEN(args)-1;i++) {
-			if(args[i]==NULL) break;
 			char str[100];
+			if(args[i]==NULL) break;
 			snprintf(str, sizeof(str), "%s ", args[i]);
 			strcat(buf, str);
 		}
 		WLOG(INFO, buf);
 	}
 	/*run compiler*/
-	pid_t pid = fork();
+	pid = fork();
 	if(pid==0) {
 		execvp("gcc", args);
 	} else if(pid>0)  {
 		int status;
+		int i, l;
+		char **linkArgs;
+		int linkArgLen;
 		waitpid(pid, &status, 0);
 
-		int i;
 		for(i=0;i<data->includeSize;i++) {
 			args[1] = calloc(strlen(data->includedFiles[i])+1, sizeof(char *));
             strcpy(args[1], data->includedFiles[i]);
@@ -270,8 +293,8 @@ void compileFile(wData *data) {
 				char *buf = calloc(256, sizeof(char));
 				int j;
 				for(j=0;j<ARRLEN(args)-1;j++) {
-					if(args[i]==NULL) break;
 					char str[100];
+					if(args[i]==NULL) break;
 					snprintf(str, sizeof(str), "%s ", args[j]);
 					strcat(buf, str);
 				}
@@ -282,8 +305,8 @@ void compileFile(wData *data) {
 			else if(pid>0) waitpid(pid, &status, 0);
 		}
 		/*link objs*/
-		char **linkArgs = calloc(ARRLEN(args)+data->includeSize+data->flagLen+1, sizeof(char*));
-		int linkArgLen = 0;
+		linkArgs = calloc(ARRLEN(args)+data->includeSize+data->flagLen+1, sizeof(char*));
+		linkArgLen = 0;
 		linkArgs[0] = "gcc";
 		linkArgs[1] = data->outputFile;
 		fileDirect = strtok(fileDirect, ".");
@@ -299,11 +322,10 @@ void compileFile(wData *data) {
 		}
 		linkArgLen += i;
 		/*Get C flags*/
-		int l;
 		for(l=0;l<data->flagLen;l++) {
 			linkArgs[l+data->includeSize+3] = calloc(strlen(data->flags[l])+1, sizeof(char *));
-            strcpy(linkArgs[l+data->includeSize+3], data->flags[l]);
-        }
+			strcpy(linkArgs[l+data->includeSize+3], data->flags[l]);
+		}
 		linkArgs[l+data->includeSize+4] = NULL;
 		linkArgLen += l;	
 		/*trim up linkArgs*/
@@ -319,8 +341,8 @@ void compileFile(wData *data) {
 			char *buf = calloc(256, sizeof(char));
 			int j;
 			for(j=0;linkArgs[j]!=NULL;j++) {
-				if(linkArgs[j]==NULL) break;
 				char str[100];
+				if(linkArgs[j]==NULL) break;
 				snprintf(str, sizeof(str), "%s ", linkArgs[j]);	
 				strcat(buf, str);
 			}

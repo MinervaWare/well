@@ -10,15 +10,19 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <dirent.h>
-#include <stdint.h>
 #include <ctype.h>
 
-#define WLOG(logLevel, ...) \
-	fprintf(stdout, "%s "#logLevel"  (%s:%d): %s\n", \
-		__TIME__,__FILE__,__LINE__,__VA_ARGS__);
+typedef int int32_t;
+typedef unsigned int uint32_t;
+typedef long int int64_t;
+typedef unsigned long int uint64_t;
 
-#define WASSERT(err, ...) \
-	if(!(err)) {fprintf(stderr,__VA_ARGS__);exit(1);}	
+#define WLOG(logLevel, _str) \
+	fprintf(stdout, "%s "#logLevel"  (%s:%d): %s\n", \
+		__TIME__,__FILE__,__LINE__,(_str));
+
+#define WASSERT(err, _str) \
+	if(!(err)) {fprintf(stderr,(_str));exit(1);}	
 
 #define RESETFCURSOR(file) \
 	fseek(file, 0, SEEK_SET);
@@ -63,17 +67,22 @@
 /*Private util implementations*/
 
 _W_PRIVATE _W_HOT char *intToHex(char *value) {
-	int input = atoi(value);
-	char *res = calloc(strlen(value)+1024, sizeof(int));
+	int input;
+	char *res;
+	input = atoi(value);
+	res = calloc(strlen(value)+1024, sizeof(int));
 	snprintf(res, sizeof(res), "0x%x", input);
 	return res;
 }
 
 _W_PRIVATE _W_HOT char *floatToHex(char *value) {
-	float input = atof(value);
-	uint32_t convVal = 0;
+	float input;
+	uint32_t convVal;
+	char *res;
+	input = atof(value);
+	convVal = 0;
 	memcpy(&convVal, &input, sizeof(float));
-	char *res = calloc(strlen(value)+1024, sizeof(int));
+	res = calloc(strlen(value)+1024, sizeof(int));
 	snprintf(res, sizeof(res), "0x%x", convVal);
 	return res;
 }

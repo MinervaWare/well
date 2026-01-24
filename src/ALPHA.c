@@ -3,8 +3,9 @@
 #include "ALPHA.h"
 
 char *stackAllocateALPHA(enum cpuType cpu) {
+	char *ret;
 	CPU = cpu;
-	char *ret = calloc(1024, sizeof(char));
+	ret = calloc(1024, sizeof(char));
 	sprintf(ret, "\tlda $30, -16($30)\n"
 				 "\tstq $26, 0($30)\n"
 				 "\tstq $15, 8($30)\n"
@@ -13,7 +14,8 @@ char *stackAllocateALPHA(enum cpuType cpu) {
 }
 
 char *stackDeallocateALPHA() {
-	char *ret = calloc(1024, sizeof(char));
+	char *ret;
+	ret = calloc(1024, sizeof(char));
 	sprintf(ret, "\tmov $15, $30\n"
 				 "\tldq $26, 0($30)\n"
 				 "\tldq $15, 8($30)\n"
@@ -65,11 +67,11 @@ char *mapRegisterALPHA(char *reg) {
 }
 
 char *getCurrentVarALPHA(struct parserData *parser, Instruction *ins, int argSpot) {
-	if(parser==NULL||ins==NULL) return NULL;
+	char asmVName[1024];
 	char *res = NULL;
 	Variable *v = NULL;
+	if(parser==NULL||ins==NULL) return NULL;
 	v = getVarFrom(parser, ins->arguments[argSpot]);
-	char asmVName[1024];
 	if(v!=NULL) {
 		switch(v->type) {
 			case STRING: snprintf(asmVName, sizeof(asmVName),
@@ -107,21 +109,22 @@ char *triArgInsRDestALPHA(char *ins, Instruction *wins) {
 }
 
 char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
+	int args = ins.argLen;
+	int outlen = args*DEFMAXFSIZE;	
+	char *outBuf = calloc(outlen, sizeof(char));
+	int i;
+	char *ret;
 	if(ins.instruction==NULL) return NULL;
 	if(!strcmp(ins.instruction, "\n")) return NULL;
 	CPU = out->parser->fData->cpu;
-	int args = ins.argLen;
-	int outlen = args*DEFMAXFSIZE;
-	char outBuf[outlen];
 	memset(outBuf, 0, outlen*sizeof(char));
-	int i;
 
 	for(i=0;i<args;i++) WTRIM(ins.arguments[i]);
 	
 	/*Special instructions*/
 	/*Inline - Drops direct asm instructions into the output*/
 	if(!strcmp(ins.instruction, "inline")) { 
-		snprintf(outBuf, sizeof(outBuf), "\t%s\n", dumpInlineASM(&ins));
+		snprintf(outBuf, sizeof(char)*outlen, "\t%s\n", dumpInlineASM(&ins));
 
 	/*
 	 * 1 argument instructions
@@ -132,22 +135,22 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 		 * */
 		if(!strcmp(ins.instruction, "call")) {
     	    if(ins.argLen>0 && ins.arguments[0]!=NULL)
-    	        snprintf(outBuf, sizeof(outBuf), "\tjsr $26, %s\n", ins.arguments[0]);
+    	        snprintf(outBuf, sizeof(char)*outlen, "\tjsr $26, %s\n", ins.arguments[0]);
 		/*
 		 * Return: return~ 0
 		 */
 		} else if(!strcmp(ins.instruction, "return")) {
 			if(ins.arguments[0]!=NULL) {
 				char *reg = NULL;
+				char *dealloc = stackDeallocateALPHA();
 				if(strlen(ins.arguments[0])==0) ins.arguments[0] = "0";
 				else reg = mapRegisterALPHA(ins.arguments[0]);
-				char *dealloc = stackDeallocateALPHA();
 				if(checkRegister(ins.arguments[0])) {
-					snprintf(outBuf, sizeof(outBuf), 
+					snprintf(outBuf, sizeof(char)*outlen, 
 							"\tldgp $29, 0($26)\n\tbis $31, %s, $1\n\tmov $1, $0\n%s",
 							reg, dealloc);
 				} else {
-					snprintf(outBuf, sizeof(outBuf),
+					snprintf(outBuf, sizeof(char)*outlen,
 							"\tldgp $29, 0($26)\n\tbis $31, %s, $1\n\tmov $1, $0\n%s",
 							ins.arguments[0], dealloc);
 				}
@@ -183,18 +186,18 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 				free(var); var = NULL;
 			}
 			if(val1[strlen(val1)-1]==')') {
-				snprintf(outBuf, sizeof(outBuf),
+				snprintf(outBuf, sizeof(char)*outlen,
 						"\tldq $22, %s\n"
 						"\tmov $22, %s\n", val1, val2);
 			} else if(val2[strlen(val2)-1]==')') {
-				snprintf(outBuf, sizeof(outBuf),
+				snprintf(outBuf, sizeof(char)*outlen,
 						"\tmov $22, %s\n"
 						"\tstq $22, %s\n", val1, val2);	
 			} else if(val1[0]=='$'&&val2[0]=='$') {
-				snprintf(outBuf, sizeof(outBuf),
+				snprintf(outBuf, sizeof(char)*outlen,
 						"\tmov %s, %s\n", val2, val1);
 			} else {
-				snprintf(outBuf, sizeof(outBuf),
+				snprintf(outBuf, sizeof(char)*outlen,
 						"\tlda %s, %s\n", val2, val1);
 			}
 			if(val1!=NULL) {free(val1);val1=NULL;}
@@ -211,7 +214,7 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 			if(ins.arguments[0]!=NULL&&ins.arguments[1]!=NULL) {
 				char *dest = mapRegisterALPHA(ins.arguments[0]);
 				char *src = mapRegisterALPHA(ins.arguments[1]);
-				snprintf(outBuf, sizeof(outBuf), "\tnot %s, %s\n", dest, src);
+				snprintf(outBuf, sizeof(char)*outlen, "\tnot %s, %s\n", dest, src);
 			}
 		}	
 	
@@ -237,9 +240,9 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 					/*If the are the same it's always 1*/
 					/*TODO: I do not believe there is a bitwise or instruction
 					 * for ALPHA: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f98/doc/alpha-guide.pdf*/
-					snprintf(outBuf, sizeof(outBuf), "\tor $31, $1, %s\n", dest);
+					snprintf(outBuf, sizeof(char)*outlen, "\tor $31, $1, %s\n", dest);
 				} else {
-					snprintf(outBuf, sizeof(outBuf), "\tand %s, %s, %s\n",
+					snprintf(outBuf, sizeof(char)*outlen, "\tand %s, %s, %s\n",
 							s1, s2, dest);
 				} 
 			}
@@ -252,13 +255,14 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 		 * */
 		} else if(!strcmp(ins.instruction, "add")) {
 			char *out = triArgInsRDestALPHA("addq", &ins);
-			snprintf(outBuf, sizeof(outBuf), "%s", out);
+			snprintf(outBuf, sizeof(char)*outlen, "%s", out);
 			free(out);
 			out = NULL;
 		}
 	}
-	char *ret = calloc(strlen(outBuf)+1, sizeof(char));
-    strcpy(ret, outBuf);
+	ret = calloc(strlen(outBuf)+1, sizeof(char));
+	strcpy(ret, outBuf);
+	free(outBuf);
 	return ret;
 }
 

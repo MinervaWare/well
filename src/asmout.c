@@ -5,7 +5,7 @@
 
 #include "ALPHA.h"
 #include "ARM_MAC.h"
-#include "AMD_X86_64.h"
+#include "AMDX8664.h"
 
 /*
  * Register conversion
@@ -15,8 +15,9 @@ int checkRegister(char *reg) {
 	WTRIM(reg);
 	if(reg==NULL||reg[0]=='\0') return 0;
 	if(reg[0]=='r'||reg[0]=='f') {
+		int regNum;
 		if(strlen(reg)>2) return 0;
-		int regNum = (int)reg[1]-48;
+		regNum = (int)reg[1]-48;
 		if(regNum>0&&regNum<9) return 1;
 	}
 	return 0;
@@ -45,10 +46,11 @@ int regToEnum(char *reg) {
 /*Instruction output*/
 
 char *dumpInlineASM(Instruction *ins) {
-	if(ins->argLen==0) return NULL;
-	char *out = calloc(strlen(ins->arguments[0])*ins->argLen+1024, sizeof(char));
-	strcpy(out, ins->arguments[0]);
+	char *out;
 	int i;
+	if(ins->argLen==0) return NULL;
+	out = calloc(strlen(ins->arguments[0])*ins->argLen+1024, sizeof(char));
+	strcpy(out, ins->arguments[0]);
 	for(i=1;i<ins->argLen;i++) {
 		char buf[1024];
 		snprintf(buf, sizeof(buf), ", %s", ins->arguments[i]);
@@ -88,30 +90,32 @@ int isEntryPoint(char *func) {
 }
 
 char *createFunctionHeader(char *name) {
+	int bSize;
+	char *head;
 	if(!strcmp(name, "main")) name = getCPUMain();
-	int bSize = strlen(name)+1024;
-	char *head = calloc(bSize, sizeof(char));
-    switch(CPU) {
-				case ALPHA: /*same as AMD_X86_64*/
-				case AMD_X86_64: snprintf(head, bSize,
-                                           "\t.text\n\t.global %s\n%s:\n", name, name);
+	bSize = strlen(name)+1024;
+	head = calloc(bSize, sizeof(char));
+	switch(CPU) {
+		case ALPHA: /*same as AMD_X86_64*/
+		case AMD_X86_64: snprintf(head, bSize,
+				  "\t.text\n\t.global %s\n%s:\n", name, name);
                                   break;
-				case I386: snprintf(head, bSize,
+		case I386: snprintf(head, bSize,
                                            "\t.text\n\t.global %s\n%s:\n", name, name);
 						   break;				
-				case ITANIUM_64: break; /*TODO*/
-				case ARMv8:
-				case ARM_MAC: snprintf(head,bSize,
+		case ITANIUM_64: break; /*TODO*/
+		case ARMv8:
+		case ARM_MAC: snprintf(head,bSize,
                                            "\t.section __TEXT,__text\n\t.global _%s\n\t.p2align 2\n_%s:\n",
                                            name, name);
 							  break;
-				case ARMv7: break; /*TODO*/
-				case POWERPC: break; /*TODO*/
-				case RS6000: break; /*TODO*/
-				case SZ_IBM: break; /*TODO*/
-				case SPARC: break; /*TODO*/
-				case MIPS: break; /*TODO*/
-				case HPPA: break; /*TODO*/
+		case ARMv7: break; /*TODO*/
+		case POWERPC: break; /*TODO*/
+		case RS6000: break; /*TODO*/
+		case SZ_IBM: break; /*TODO*/
+		case SPARC: break; /*TODO*/
+		case MIPS: break; /*TODO*/
+		case HPPA: break; /*TODO*/
 	};
 	if(isEntryPoint(name)) {
 		if(CPU==ALPHA) strcat(head, "\tldgp $29, 0($27)\n");
@@ -122,25 +126,28 @@ char *createFunctionHeader(char *name) {
 /*Init any local variables with provided data values.*/
 char *getLVTAllocation(Function *func) {
 	char *res = NULL;
-	if(func==NULL) return res;
 	int i;
+	if(func==NULL) return res;
 	for(i=0;i<func->lvt->totalVariables;i++) {
 		if(func->lvt->variables[i].varName!=NULL) {
 			char *vName = func->lvt->variables[i].varName;
 			char *value = func->lvt->variables[i].value;
 			int offset = func->lvt->variables[i].offset;
+			char *buf;
+			int bSize;
 			if(value==NULL||vName==NULL) continue;
-			char buf[strlen(vName)+strlen(value)+1024];
+			bSize = strlen(vName)+strlen(value)+1024;
+			buf = calloc(bSize, sizeof(char));
 			switch(CPU) {
 				case I386:
-				case AMD_X86_64: AMD_X86_64GetLVAlloc(buf, sizeof(buf), 
+				case AMD_X86_64: AMD_X86_64GetLVAlloc(buf, sizeof(char)*bSize, 
 										 &func->lvt->variables[i]);
 								 break;
 				case ARMv8:
-				case ARM_MAC: ARM_MACGetLVAlloc(buf, sizeof(buf),
+				case ARM_MAC: ARM_MACGetLVAlloc(buf, sizeof(char)*bSize,
 									  &func->lvt->variables[i]);
 							  break;
-				case ALPHA: ALPHAGetLVTAlloc(buf, sizeof(buf),
+				case ALPHA: ALPHAGetLVTAlloc(buf, sizeof(char)*bSize,
 									&func->lvt->variables[i]);
 							break; 
 				case ITANIUM_64: break; /*TODO*/
@@ -161,6 +168,7 @@ char *getLVTAllocation(Function *func) {
 						(strlen(res)+strlen(buf)+1)*sizeof(char));
 				strcat(res, buf);
 			}
+			free(buf);
 		}
 	}
 	return res;
@@ -177,10 +185,11 @@ char *getSubScopeHeader(FuncSubScopeData *subScope) {
 char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 	int bufferSize = 1;
 	char *res = calloc(bufferSize, sizeof(char));
-	memset(res, 0, bufferSize);
 	int i,j;
+	memset(res, 0, bufferSize);
 	for(i=0;i<func->totalScopes;i++) {
 		char *header = getSubScopeHeader(&func->subScopes[i]);
+		char *ret;
 		if(header!=NULL) {
 			bufferSize += strlen(header)+1;
 			res = (char *)realloc(res, sizeof(char)*bufferSize);
@@ -221,7 +230,7 @@ char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 				free(asmInstruction);
 			}
 		}
-		char *ret = calloc(strlen(func->subScopes[i].scope.scopeName)+128, sizeof(char));
+		ret = calloc(strlen(func->subScopes[i].scope.scopeName)+128, sizeof(char));
 		bufferSize += strlen(ret)+128;
 		switch(CPU) {
 			case AMD_X86_64: snprintf(ret, (strlen(ret)+128)*sizeof(char), 
@@ -261,28 +270,28 @@ char *getStackAllocation() {
 }
 
 void convertFunctions(AsmOut *out) {
-	out->buffers.functions = calloc(1, sizeof(char));
 	int bufferSize = 1;
+	int i,j;
+	out->buffers.functions = calloc(1, sizeof(char));
 	memset(out->buffers.functions, 0, bufferSize);
 
-	int i,j;
 	for(i=0;i<out->parser->totalFunctions;i++) {
+		static int setAllocation = 0;
 		char *header = createFunctionHeader(out->parser->functions[i].funName);
-		bufferSize+=strlen(header)+1;
 		char *LVTAlloc = getLVTAllocation(&out->parser->functions[i]);
+		char *subScopeOut;
+		bufferSize+=strlen(header)+1;
 
 		out->buffers.functions =
 			realloc(out->buffers.functions, bufferSize);
 		strcat(out->buffers.functions, header);
 		free(header);header = NULL;
-
-		static int setAllocation = 0;
 		/*instructions*/
 		for(j=0;j<out->parser->functions[i].dataLength;j++) {
 			Instruction *curIns = &out->parser->functions[i].instructions[j];
-			if(curIns->instruction==NULL) continue;
 			char *asmInstruction = NULL;
 			char *stackAllocation = getStackAllocation();
+			if(curIns->instruction==NULL) continue;
 
 			switch(CPU) {
 				case ALPHA: asmInstruction = convertInstructionALPHA(out, *curIns);
@@ -322,7 +331,7 @@ void convertFunctions(AsmOut *out) {
 				}
 				strcat(out->buffers.functions, asmInstruction);
 				free(asmInstruction); asmInstruction = NULL;
-            }
+			}
 			free(stackAllocation);stackAllocation=NULL;
 		}
 		free(LVTAlloc);
@@ -356,7 +365,7 @@ void convertFunctions(AsmOut *out) {
 			if(deallocateStack!=NULL) {free(deallocateStack);deallocateStack = NULL;}
 		}
 		/*Function sub-scopes*/
-		char *subScopeOut = 
+		subScopeOut = 
 			convertFunctionSubScopes(out, &out->parser->functions[i]);
 		if(subScopeOut!=NULL) {
 			bufferSize+=strlen(subScopeOut);
@@ -373,22 +382,24 @@ void convertFunctions(AsmOut *out) {
  * */
 
 char *getAsmString(char *name, char *value) {
-	char buf[strlen(name)+strlen(value)+1024];
-    switch(CPU) {
-		case AMD_X86_64: snprintf(buf, sizeof(buf),
+	int bLen = strlen(name)+strlen(value)+1024;
+	char *buf = calloc(bLen, sizeof(char));
+	char *ret;
+	switch(CPU) {
+		case AMD_X86_64: snprintf(buf, sizeof(char)*bLen,
                            "\t.text\n\t.global wl_str_%s\n.rawwl_str%s:\n\t.asciz %s\n\t"
                            ".data\n\t.align 8\nwl_str_%s:\n\t.quad .rawwl_str%s\n",
                            name, name, value, name, name);break;
-		case I386: snprintf(buf, sizeof(buf),
+		case I386: snprintf(buf, sizeof(char)*bLen,
                            "\t.text\n\t.global wl_str_%s\n.rawwl_str%s:\n\t.asciz %s\n\t"
                            ".data\n\t.align 8\nwl_str_%s:\n\t.long .rawwl_str%s\n",
                            name, name, value, name, name);break;
 		case ITANIUM_64: break; /*TODO*/
 		case ARMv8: /*Same as ARM_MAC*/
 		case ALPHA: /*Same as ARM_MAC*/
-		case ARM_MAC: snprintf(buf, sizeof(buf), "wl_str_%s:\n\t.asciz %s\n",
+		case ARM_MAC: snprintf(buf, sizeof(char)*bLen, "wl_str_%s:\n\t.asciz %s\n",
                            name, value);break;
-        case ARMv7: break; /*TODO*/
+		case ARMv7: break; /*TODO*/
 		case POWERPC: break; /*TODO*/
 		case RS6000: break; /*TODO*/
 		case SZ_IBM: break; /*TODO*/
@@ -396,69 +407,92 @@ char *getAsmString(char *name, char *value) {
 		case MIPS: break; /*TODO*/
 		case HPPA: break; /*TODO*/
 	};
-	char *ret = calloc(strlen(buf)+1, sizeof(char));
+	ret = calloc(strlen(buf)+1, sizeof(char));
 	strcpy(ret, buf);
+	free(buf);
 	return ret;
 }
 
 char *getAsmChar(char *name, char *value) {
+	char *nameBuf;
+	char *buf;
+	char *ret;
+	int nbLen, bLen;
 	while(value[0]=='\''||value[0]==' ') value++;
 	while(value[strlen(value)-1]=='\'') value[strlen(value)-1] = '\0';
-	char nameBuf[strlen(name)+100];
-	snprintf(nameBuf, sizeof(nameBuf), "wl_ch_%s", name);
-	char buf[strlen(name)+strlen(value)+100];
-	snprintf(buf, sizeof(buf),
+	nbLen = strlen(name)+100;
+	nameBuf = calloc(nbLen, sizeof(char));
+	snprintf(nameBuf, sizeof(char)*nbLen, "wl_ch_%s", name);
+	bLen = strlen(name)+strlen(value)+100;
+	buf = calloc(bLen, sizeof(char));
+	snprintf(buf, sizeof(char)*bLen,
 			"\n\t.global %s\n%s:\n\t.byte %d\n",
 			nameBuf, nameBuf, value[0]);
-	char *ret = calloc(strlen(buf)+1, sizeof(char));
+	ret = calloc(strlen(buf)+1, sizeof(char));
 	strcpy(ret, buf);
+	free(nameBuf);
+	free(buf);
 	return ret;
 }
 
 char *getAsmInt(char *name, char *value) {
 	char *hexValue = intToHex(value);
-	char nameBuf[strlen(name)+100];
-	snprintf(nameBuf, sizeof(nameBuf), "wl_int_%s", name);
-	char buf[strlen(nameBuf)+strlen(hexValue)+100];
-	snprintf(buf, sizeof(buf), 
+	int nbLen = strlen(name)+100;
+	int bLen;
+	char *ret;
+	char *buf;
+	char *nameBuf = calloc(nbLen, sizeof(char));
+	snprintf(nameBuf, sizeof(char)*nbLen, "wl_int_%s", name);
+	bLen = strlen(nameBuf)+strlen(hexValue)+100;
+	buf = calloc(bLen, sizeof(char));
+	snprintf(buf, sizeof(char)*bLen, 
 			"\n\t.global %s\n\t.p2align 2,0x0\n%s:\n\t.long %s\n",
 			nameBuf, nameBuf, hexValue);	
-	char *ret = calloc(strlen(buf)+1, sizeof(char));
+	ret = calloc(strlen(buf)+1, sizeof(char));
 	strcpy(ret, buf);
+	free(nameBuf);
+	free(buf);
 	return ret;
 }
 
 char *getAsmFloat(char *name, char *value) {
 	char *hexValue = floatToHex(value);
-	char nameBuf[strlen(name)+100];
-	snprintf(nameBuf, sizeof(nameBuf), "wl_fl_%s", name);
-	char buf[strlen(nameBuf)+strlen(hexValue)+100];
-	snprintf(buf, sizeof(buf), 
+	int nbLen = strlen(name)+100;
+	int bLen;
+	char *nameBuf = calloc(nbLen, sizeof(char));
+	char *buf;
+	char *ret;
+	snprintf(nameBuf, sizeof(char)*nbLen, "wl_fl_%s", name);
+	bLen = strlen(nameBuf)+strlen(hexValue)+100;
+	buf = calloc(bLen, sizeof(char));
+	snprintf(buf, sizeof(char)*bLen, 
 			"\n\t.global %s\n\t.p2align 2,0x0\n%s:\n\t.long %s\n",
 			nameBuf, nameBuf, hexValue);	
-	char *ret = calloc(strlen(buf)+1, sizeof(char));
+	ret = calloc(strlen(buf)+1, sizeof(char));
 	strcpy(ret, buf);
+	free(nameBuf);
+	free(buf);
 	return ret;
 }
 
 char *getAsmZero(char *name, char *value) {
 	int len = strlen(name)+strlen(value)+128;
 	char *ret = calloc(len, sizeof(char));
-	snprintf(ret, len*sizeof(char), "\n.zerofill __DATA,__bss,wl_z_%s,%s,3", name, value);
+	snprintf(ret, sizeof(char)*len, "\n.zerofill __DATA,__bss,wl_z_%s,%s,3", name, value);
 	return ret;
 }
 
 void convertVariables(AsmOut *out) {
-	out->buffers.variables = calloc(1, sizeof(char));
 	int totalSize = 1;
 	int i,j;
+	struct parserData *parser = out->parser;
+	out->buffers.variables = calloc(1, sizeof(char));
 	for(i=0;i<out->parser->totalVariables;i++) {	
-
-		char *curName = calloc(strlen(out->parser->variables[i].varName)+1, sizeof(char));
+		char *curName, *curValue, *asmVar = NULL;
+		curName = calloc(strlen(out->parser->variables[i].varName)+1, sizeof(char));
 		strcpy(curName, out->parser->variables[i].varName);
-		char *curValue = calloc(strlen(out->parser->variables[i].value)+1, sizeof(char));
+		curValue = calloc(strlen(out->parser->variables[i].value)+1, sizeof(char));
 		strcpy(curValue, out->parser->variables[i].value);
-		char *asmVar = NULL;	
 		switch(out->parser->variables[i].type) {
 			case INT: asmVar = getAsmInt(curName, curValue);break;
 			case FLOAT: asmVar = getAsmFloat(curName, curValue);break;
@@ -477,7 +511,6 @@ void convertVariables(AsmOut *out) {
 		free(curValue);
 	}
 	/*Local string variables*/
-	struct parserData *parser = out->parser;
 	for(i=0;i<parser->totalFunctions;i++) {
 		Function *f = &parser->functions[i];
 		for(j=0;j<f->lvt->totalVariables;j++) {
@@ -510,21 +543,25 @@ void convertVariables(AsmOut *out) {
  * */
 
 void convertExternals_Includes(AsmOut *out) {
-	out->buffers.externals = calloc(1, sizeof(char));
 	int totalSize=1;
 	int i;
+	out->buffers.externals = calloc(1, sizeof(char));
 	/*Externals*/
 	for(i=0;i<out->parser->externals.externSize;i++) {
 		char *curEx = calloc(strlen(out->parser->externals.externs[i])+1,sizeof(char));
+		char *buf;
+		int bLen;
 		strcpy(curEx, out->parser->externals.externs[i]);
-		char buf[strlen(curEx)+100];
-		snprintf(buf, sizeof(buf), "\t.extern %s\n", curEx);
+		bLen = strlen(curEx)+100;
+		buf = calloc(bLen, sizeof(char));
+		snprintf(buf, sizeof(char)*bLen, "\t.extern %s\n", curEx);
 		if(curEx!=NULL) {
 			totalSize+=strlen(buf);
 			out->buffers.externals = 
 				(char *)realloc(out->buffers.externals, sizeof(char)*(totalSize+2));
 			strcat(out->buffers.externals, buf);
 		}
+		free(buf);
 	}
 }
 
@@ -533,9 +570,10 @@ void convertExternals_Includes(AsmOut *out) {
  * */
 
 void completeBuffer(AsmOut *out) {
+	int totalSize;
 	if(out->buffers.functions==NULL||
 			out->buffers.variables==NULL) return;
-	int totalSize = 
+	totalSize = 
 		strlen(out->buffers.functions)+
 		strlen(out->buffers.variables)+
 		strlen(out->buffers.externals);
@@ -573,12 +611,13 @@ void freeAsm(AsmOut *out) {
 }
 
 void initAsmOut(struct parserData *parser, AsmOut *output) {
+	char *fileName;
 	if(output==NULL) output = calloc(1, sizeof(AsmOut));
 	output->parser = parser;
 	output->functions = calloc(parser->totalFunctions, sizeof(Function));
 	CPU = parser->fData->cpu;
 
-	char *fileName = strtok(parser->fData->fileName, ".");
+	fileName = strtok(parser->fData->fileName, ".");
 	strcat(fileName, ".s");
 
 	output->asmOut = fopen(fileName, "r");

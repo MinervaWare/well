@@ -17,7 +17,7 @@ enum registersALPHA {
 	a5,
 	v0, /*$0 - return value*/
 	t0, /*$1 - tmp reg*/
-	sp, /*$30*/
+	sp /*$30*/
 };
 
 char *stackAllocateALPHA(enum cpuType cpu);

@@ -3,3 +3,5 @@
 /*PPC will handle PPC & PPC64*/
 
 #include "PPC.h"
+
+void ppc_none() {}

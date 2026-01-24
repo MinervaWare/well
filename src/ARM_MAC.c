@@ -18,9 +18,9 @@ MacRegData *macRegData = NULL;
  * This is because
  * */
 char *stackAllocateARM_MAC(enum cpuType cpu) {
+	char *ret = calloc(1024, sizeof(char));
 	CPU = cpu;
 	/*auto to 16*/
-	char *ret = calloc(1024, sizeof(char));
 	sprintf(ret, "\tsub sp, sp, #32\n\tstp x29, x30, [sp, #32]\n\tadd x29, sp, #32\n");
 	return ret; 
 }
@@ -78,8 +78,9 @@ char *mapRegister(char *reg) {
 char *mapVarRegister(char *reg, enum varTypes type) {
 	/*Magic 3 is just register string size + 1*/
 	char *ret = NULL;
-	ret = calloc(3, sizeof(char));
 	char rt = 'x';
+	int regNum = regToEnum(reg);	
+	ret = calloc(3, sizeof(char));
 	switch(type) {
 		case CHAR:
 		case INT: rt = 'w'; break;
@@ -87,7 +88,6 @@ char *mapVarRegister(char *reg, enum varTypes type) {
 		case STRING: 
 		default: rt = 'x'; break;
 	};
-	int regNum = regToEnum(reg);	
 	switch(regNum) {
 		case X0: snprintf(ret, sizeof(ret), "%c0", rt);break;
 		case X1: snprintf(ret, sizeof(ret), "%c1", rt);break;
@@ -113,11 +113,11 @@ char getVarRegType(enum varTypes type) {
 }
 
 char *ARM_MACgetCurrentVar(struct parserData *parser, Instruction *ins, int argSpot) {
-	if(parser==NULL||ins==NULL) return NULL;
 	char *res = NULL;
 	Variable *v = NULL;
-	v = getVarFrom(parser, ins->arguments[argSpot]);
 	char asmVName[1024];
+	if(parser==NULL||ins==NULL) return NULL;
+	v = getVarFrom(parser, ins->arguments[argSpot]);
 	if(v!=NULL) {
 		switch(v->type) {
 			case STRING: snprintf(asmVName, sizeof(asmVName),
@@ -273,23 +273,23 @@ char *ifStateConvertARM_MAC(AsmOut *out, Instruction *ins) {
 
 /*x registers are 64-bit w registers are 32*/
 char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
+	int args = ins.argLen;
+	int outlen = args*DEFMAXFSIZE;
+	char *outBuf = calloc(outlen, sizeof(char));
+	int i;
+	char *ret;
 	if(macRegData==NULL) {
 		macRegData = calloc(1, sizeof(MacRegData));
 		macRegData->prevRegType = 'x';
 	}
 	CPU = out->parser->fData->cpu;
-	int args = ins.argLen;
-	int outlen = args*DEFMAXFSIZE;
-	char outBuf[outlen];
-	outBuf[0] = '\0';
-	int i;
 
 	for(i=0;i<args;i++) WTRIM(ins.arguments[i]);
 
 	/*Special instructions*/
 	/*Inline - Drops direct asm instructions into the output*/
 	if(!strcmp(ins.instruction, "inline")) { 
-		snprintf(outBuf, sizeof(outBuf), "\t%s\n", dumpInlineASM(&ins));
+		snprintf(outBuf, sizeof(char)*outlen, "\t%s\n", dumpInlineASM(&ins));
 	
 
 	/*
@@ -301,7 +301,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 		 * NOTE: This is "temporary" until I get if statements and loops going
 		 * */
 		if(!strcmp(ins.instruction, "jump")) {
-			snprintf(outBuf, sizeof(outBuf), "\tb _%s\n", ins.arguments[0]);
+			snprintf(outBuf, sizeof(char)*outlen, "\tb _%s\n", ins.arguments[0]);
 		}
 
 	/*
@@ -313,7 +313,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 		 * */
 		if(!strcmp(ins.instruction, "call")) {
 			if(ins.argLen>0 && ins.arguments[0]!=NULL)
-				snprintf(outBuf, sizeof(outBuf), "\tbl _%s\n", ins.arguments[0]);
+				snprintf(outBuf, sizeof(char)*outlen, "\tbl _%s\n", ins.arguments[0]);
 		/*
 		 * Return
 		 * */
@@ -330,7 +330,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 		  * */
 		} else if(!strcmp(ins.instruction, "sstruct")) {
 			char *reg = mapRegister(ins.arguments[0]);
-			snprintf(outBuf, sizeof(outBuf), 
+			snprintf(outBuf, sizeof(char)*outlen, 
 					"\tstr %s, [sp, #8]\n", reg);
 		
 		/*
@@ -339,7 +339,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 		 * */
 		} else if(!strcmp(ins.instruction, "lstruct")) {
 			char *reg = mapRegister(ins.arguments[0]);
-			snprintf(outBuf, sizeof(outBuf), "\tldr %s, [sp, #8]\n", reg);
+			snprintf(outBuf, sizeof(char)*outlen, "\tldr %s, [sp, #8]\n", reg);
 		}
 
 	/*
@@ -352,6 +352,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 		if(!strcmp(ins.instruction, "move")) {
 			char *val1;
 			char *val2;
+			char *mov;
 			if(checkRegister(ins.arguments[0])) {
 				char *ARMReg = mapRegister(ins.arguments[0]);
 				val1 = calloc(strlen(ARMReg)+1, sizeof(char));
@@ -370,7 +371,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 				strcpy(val2, var);
 			}
 
-			char *mov = ARM_MACgetMoveInstructions(out->parser, &ins, val1, val2);
+			mov = ARM_MACgetMoveInstructions(out->parser, &ins, val1, val2);
 			strcpy(outBuf, mov);
 		/*
 		 * Bitwise Instructions (Logical modifications are made with symbol operators)
@@ -387,22 +388,22 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 				/*if it is 32-bit(w) we need to extend it back afterwards.*/
 				if(!strcmp(src,dest)) {
 					if(t=='w') {
-						snprintf(outBuf, sizeof(outBuf), 
+						snprintf(outBuf, sizeof(char)*outlen, 
 								"\tmvn %c%s, %c%s\n\tsxtw x%s, w%s\n\tstr %s, [sp]\n", 
 								t, src+1, t, src+1, src+1, src+1, src);
 						macRegData->prevRegType = 'x';
 					} else {
-						snprintf(outBuf, sizeof(outBuf), "\tmvn %c%s, %c%s\n", 
+						snprintf(outBuf, sizeof(char)*outlen, "\tmvn %c%s, %c%s\n", 
 								t, src+1, t, src+1);
 					}
 				} else {
 					if(t=='w') {
-						snprintf(outBuf, sizeof(outBuf), 
+						snprintf(outBuf, sizeof(char)*outlen, 
 								"\tmvn %c%s, %c%s\n\tsxtw x%s, w%s\n\tstr %s, [sp]\n", 
 								t, dest+1, t, src+1, dest+1, dest+1, dest);
 						macRegData->prevRegType = 'x';
 					} else {
-						snprintf(outBuf, sizeof(outBuf), "\tmvn %c%s, %c%s\n", 
+						snprintf(outBuf, sizeof(char)*outlen, "\tmvn %c%s, %c%s\n", 
 								t, dest+1, t, src+1);
 					}
 				}
@@ -424,7 +425,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 		 * */
 		if(getIfStateCmpARM_MAC(ins.instruction)!=NULL) {
 			char *conv = ifStateConvertARM_MAC(out, &ins);
-			snprintf(outBuf, sizeof(outBuf), "%s", conv);
+			snprintf(outBuf, sizeof(char)*outlen, "%s", conv);
 			free(conv); conv = NULL;
 		}
 	}
@@ -432,8 +433,9 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 
 
 
-	char *ret = calloc(strlen(outBuf)+1, sizeof(char));
+	ret = calloc(strlen(outBuf)+1, sizeof(char));
 	strcpy(ret, outBuf);
+	free(outBuf);
 	return ret;
 }
 
