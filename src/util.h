@@ -12,16 +12,23 @@
 #include <dirent.h>
 #include <ctype.h>
 
-#ifndef __INT32_TYPE__
+#if defined(__clang__)
+#	ifndef __INT32_TYPE__
 typedef int int32_t;
-#endif
-#ifndef __UINT32_TYPE__
+#	endif
+#	ifndef __UINT32_TYPE__
 typedef unsigned int uint32_t;
-#endif
-#ifndef __INT64_TYPE__
+#	endif
+#	ifndef __INT64_TYPE__
 typedef long int int64_t;
-#endif
-#ifndef __UINT64_TYPE__
+#	endif
+#	ifndef __UINT64_TYPE__
+typedef unsigned long int uint64_t;
+#	endif
+#else
+typedef int int32_t;
+typedef unsigned int uint32_t;
+typedef long int int64_t;
 typedef unsigned long int uint64_t;
 #endif
 

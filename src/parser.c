@@ -645,7 +645,7 @@ void startFunctionSubScope(Function *func, char *data, int lineNum) {
 		default: break;
 	};
 	func->subScopes[func->totalScopes].scope.scopeName =
-		calloc(strlen(buf), sizeof(char));
+		calloc(strlen(buf)+1, sizeof(char));
 	strcpy(func->subScopes[func->totalScopes].scope.scopeName, buf);
 	func->subScopes[func->totalScopes].totalData = 0;
 	func->subScopes[func->totalScopes].dataCap = SUBSCOPESTEP;

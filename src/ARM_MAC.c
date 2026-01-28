@@ -32,6 +32,23 @@ char *stackDeallocateARM_MAC() {
 	return ret; 
 }
 
+/*
+ * Choose between standard elf and mach value definitions.
+ * */
+char *getTargetValVariationARM_MAC(char *value, int operand) {
+	int len = strlen(value)+128;
+	char *res = calloc(len, sizeof(char));
+	if(CPU!=ARM_MAC) { 
+		if(operand==2) snprintf(res, sizeof(char)*len, ":lo12:%s", value);
+		else snprintf(res, sizeof(char)*len, "%s", value);
+	} else {
+		if(operand==1) snprintf(res, sizeof(char)*len, "%s@PAGE", value); 
+		else if(operand==2) snprintf(res, sizeof(char)*len, "%s@PAGEOFF", value);
+		else snprintf(res, sizeof(char)*len, "%s", value);
+	}
+	return res;
+}
+
 void ARM_MACGetLVAlloc(char *buf, int bSize, Variable *var) {
 	char *vName = var->varName;
 	char *value = var->value;
@@ -47,12 +64,22 @@ void ARM_MACGetLVAlloc(char *buf, int bSize, Variable *var) {
 						  "\tstr x28, [sp, #%d]\n",
 						  (int)value[0], offset);
 				   break;
-		case STRING: snprintf(buf, bSize,
-							 "\tadrp x28, wl_str_%s@PAGE\n"
-							 "\tadd x28, x28, wl_str_%s@PAGEOFF\n"
-							 "\tstr x28, [sp, %d]\n",
-							 vName, vName, offset);
-					 break;
+		case STRING: {
+					if(CPU!=ARM_MAC) {
+						snprintf(buf, bSize,
+								"\tadrp x28, wl_str_%s\n"
+								"\tadd x28, x28, :lo12:wl_str_%s\n"
+								"\tstr x28, [sp, %d]\n",
+								vName, vName, offset);
+					} else {
+						snprintf(buf, bSize,
+								"\tadrp x28, wl_str_%s@PAGE\n"
+								"\tadd x28, x28, wl_str_%s@PAGEOFF\n"
+								"\tstr x28, [sp, %d]\n",
+								vName, vName, offset);
+					}
+					break;
+		}
 		case FLOAT: break;
 		case VOID: break;
 		case ZERO: break;
@@ -139,7 +166,8 @@ char *ARM_MACgetCurrentVar(struct parserData *parser, Instruction *ins, int argS
 		else {
 			if(!atoi(ins->arguments[argSpot])&&
 					strcmp(ins->arguments[argSpot], "0")) {
-				snprintf(asmVName, sizeof(asmVName), "_%s", ins->arguments[argSpot]);
+				if(CPU!=ARM_MAC) snprintf(asmVName, sizeof(asmVName), "%s", ins->arguments[argSpot]);
+				else snprintf(asmVName, sizeof(asmVName), "_%s", ins->arguments[argSpot]);
 			} else {
 				snprintf(asmVName, sizeof(asmVName), "#%s", ins->arguments[argSpot]);
 			}
@@ -155,29 +183,35 @@ char *ARM_MACgetMoveInstructions(struct parserData *parser, Instruction *ins,
 	char *res = NULL;
 	char outBuf[1024];
 	Variable *var = getVarFrom(parser, ins->arguments[0]);
+	if(var==NULL||parser==NULL||ins==NULL||val1==NULL||val2==NULL) return NULL;
 	if(var) {
 		if(var->varName!=NULL) {
 			switch(var->type) {
 				case INT: snprintf(outBuf, sizeof(outBuf), 
-								  "\tadrp %s,%s@PAGE\n\tldr w%s, [%s, %s@PAGEOFF]\n",
-								  val2, val1, val2+1, val2, val1);
+								  "\tadrp %s,%s\n\tldr w%s, [%s, %s]\n",
+								  val2, getTargetValVariationARM_MAC(val1, 1), 
+								  val2+1, val2, getTargetValVariationARM_MAC(val1, 2));
 						  break;
 				case CHAR: snprintf(outBuf, sizeof(outBuf), 
-								  "\tadrp %s,%s@PAGE\n\tldrsb w%s, [%s, %s@PAGEOFF]\n",
-								  val2, val1, val2+1, val2, val1);
+								  "\tadrp %s,%s\n\tldrsb w%s, [%s, %s]\n",
+								  val2, getTargetValVariationARM_MAC(val1, 1), 
+								  val2+1, val2, getTargetValVariationARM_MAC(val1, 2));
 						   break;
 				case STRING: snprintf(outBuf, sizeof(outBuf), 
-								  "\tadrp %s,%s@PAGE\n\tadd %s, %s, %s@PAGEOFF\n",
-								  val2, val1, val2, val2, val1);
+								  "\tadrp %s,%s\n\tadd %s, %s, %s\n",
+								  val2, getTargetValVariationARM_MAC(val1, 1), 
+								  val2, val2, getTargetValVariationARM_MAC(val1, 2));
 							 break;
 
 				case FLOAT: snprintf(outBuf, sizeof(outBuf), 
-								  "\tadrp %s,%s@PAGE\n\tldr s%s, [%s, %s@PAGEOFF]\n",
-								  val2, val1, val2+1, val2, val1);
+								  "\tadrp %s,%s\n\tldr s%s, [%s, %s]\n",
+								  val2, getTargetValVariationARM_MAC(val1, 1), 
+								  val2+1, val2, getTargetValVariationARM_MAC(val1, 2));
 							break;
 				default: snprintf(outBuf, sizeof(outBuf), 
-								 "\tadrp %s,%s@PAGE\n\tadd %s, %s, %s@PAGEOFF\n",
-								 val2, val1, val2, val2, val1);
+								 "\tadrp %s,%s\n\tadd %s, %s, %s\n",
+								 val2, getTargetValVariationARM_MAC(val1, 1), 
+								 val2, val2, getTargetValVariationARM_MAC(val1, 2));
 						 break;
 			};
 		}
@@ -201,12 +235,13 @@ char *ARM_MACgetMoveInstructions(struct parserData *parser, Instruction *ins,
 						"\tmov %s, %s\n", val2, val1);
 			} else {
 				snprintf(outBuf, sizeof(outBuf), 
-						"\tadrp %s,%s@PAGE\n\tadd %s, %s, %s@PAGEOFF\n",
-						val2, val1, val2, val2, val1);
+						"\tadrp %s,%s\n\tadd %s, %s, %s\n",
+						val2, getTargetValVariationARM_MAC(val1, 1), 
+						val2, val2, getTargetValVariationARM_MAC(val1, 2));
 			}
 		}
 	}
-	res = calloc(strlen(outBuf), sizeof(char));
+	res = calloc(strlen(outBuf)+1, sizeof(char));
 	strcpy(res, outBuf);
 	return res;
 }
@@ -312,8 +347,10 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 		 * Call
 		 * */
 		if(!strcmp(ins.instruction, "call")) {
-			if(ins.argLen>0 && ins.arguments[0]!=NULL)
-				snprintf(outBuf, sizeof(char)*outlen, "\tbl _%s\n", ins.arguments[0]);
+			if(ins.argLen>0 && ins.arguments[0]!=NULL) {
+				if(CPU!=ARM_MAC) snprintf(outBuf, sizeof(char)*outlen, "\tbl %s\n", ins.arguments[0]);
+				else snprintf(outBuf, sizeof(char)*outlen, "\tbl _%s\n", ins.arguments[0]);
+			}
 		/*
 		 * Return
 		 * */
@@ -372,6 +409,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 			}
 
 			mov = ARM_MACgetMoveInstructions(out->parser, &ins, val1, val2);
+			if(mov==NULL) mov = "";
 			strcpy(outBuf, mov);
 		/*
 		 * Bitwise Instructions (Logical modifications are made with symbol operators)
@@ -429,9 +467,6 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 			free(conv); conv = NULL;
 		}
 	}
-
-
-
 
 	ret = calloc(strlen(outBuf)+1, sizeof(char));
 	strcpy(ret, outBuf);

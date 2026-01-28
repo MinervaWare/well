@@ -1,12 +1,11 @@
-	.section __TEXT,__text
-	.global _jeT
+	.global jeT
 	.p2align 2
-_jeT:
+jeT:
 	sub sp, sp, #32
 	stp x29, x30, [sp, #32]
 	add x29, sp, #32
-	adrp x28, wl_str_jets@PAGE
-	add x28, x28, wl_str_jets@PAGEOFF
+	adrp x28, wl_str_jets
+	add x28, x28, :lo12:wl_str_jets
 	str x28, [sp, 8]
 	mov x28, 10
 	str x28, [sp, #16]
@@ -18,20 +17,15 @@ _jeT:
 	add sp, sp, #32
 	ret
 .wl_jeT_is_0:
-	adrp x0,_jets@PAGE
-	add x0, x0, _jets@PAGEOFF
-	ldr x1, [sp, #16]
-	bl _printf
-	b .wl_jeT_is_0_cont
-	.section __TEXT,__text
-	.global _jneT
+	bl printf
+	.global jneT
 	.p2align 2
-_jneT:
+jneT:
 	sub sp, sp, #32
 	stp x29, x30, [sp, #32]
 	add x29, sp, #32
-	adrp x28, wl_str_jnets@PAGE
-	add x28, x28, wl_str_jnets@PAGEOFF
+	adrp x28, wl_str_jnets
+	add x28, x28, :lo12:wl_str_jnets
 	str x28, [sp, 8]
 	mov x28, 5
 	str x28, [sp, #16]
@@ -43,19 +37,15 @@ _jneT:
 	add sp, sp, #32
 	ret
 .wl_jneT_is_0:
-	ldr x0, [sp, #8]
-	ldr x1, [sp, #16]
-	bl _printf
-	b .wl_jneT_is_0_cont
-	.section __TEXT,__text
-	.global _jgeT
+	bl printf
+	.global jgeT
 	.p2align 2
-_jgeT:
+jgeT:
 	sub sp, sp, #32
 	stp x29, x30, [sp, #32]
 	add x29, sp, #32
-	adrp x28, wl_str_jgets@PAGE
-	add x28, x28, wl_str_jgets@PAGEOFF
+	adrp x28, wl_str_jgets
+	add x28, x28, :lo12:wl_str_jgets
 	str x28, [sp, 8]
 	mov x28, 11
 	str x28, [sp, #16]
@@ -67,19 +57,15 @@ _jgeT:
 	add sp, sp, #32
 	ret
 .wl_jgeT_is_0:
-	ldr x0, [sp, #8]
-	ldr x1, [sp, #16]
-	bl _printf
-	b .wl_jgeT_is_0_cont
-	.section __TEXT,__text
-	.global _jleT
+	bl printf
+	.global jleT
 	.p2align 2
-_jleT:
+jleT:
 	sub sp, sp, #32
 	stp x29, x30, [sp, #32]
 	add x29, sp, #32
-	adrp x28, wl_str_jlets@PAGE
-	add x28, x28, wl_str_jlets@PAGEOFF
+	adrp x28, wl_str_jlets
+	add x28, x28, :lo12:wl_str_jlets
 	str x28, [sp, 8]
 	mov x28, 9
 	str x28, [sp, #16]
@@ -91,24 +77,20 @@ _jleT:
 	add sp, sp, #32
 	ret
 .wl_jleT_is_0:
-	ldr x0, [sp, #8]
-	ldr x1, [sp, #16]
-	bl _printf
-	b .wl_jleT_is_0_cont
-	.section __TEXT,__text
-	.global _main
+	bl printf
+	.global main
 	.p2align 2
-_main:
+main:
 	sub sp, sp, #32
 	stp x29, x30, [sp, #32]
 	add x29, sp, #32
-	adrp x0,wl_str_iftest@PAGE
-	add x0, x0, wl_str_iftest@PAGEOFF
-	bl _printf
-	bl _jeT
-	bl _jneT
-	bl _jgeT
-	bl _jleT
+	adrp x0,wl_str_iftest
+	add x0, x0, :lo12:wl_str_iftest
+	bl printf
+	bl jeT
+	bl jneT
+	bl jgeT
+	bl jleT
 	mov x0, #0
 	ldp x29, x30, [sp, #32]
 	add sp, sp, #32

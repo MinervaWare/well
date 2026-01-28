@@ -68,8 +68,8 @@ char *getCPUMain() {
 	/*I know this is redundant,
 	 * I still need to go through different compilers and sort the main per compiler, not CPU.*/
 	switch(CPU) {
-		case ARMv8:
-		case ARM_MAC: strcpy(ret, "main"); break;
+		case ARMv8: strcpy(ret, "main"); break;
+		case ARM_MAC: strcpy(ret, "_main"); break;
 		case AMD_X86_64: strcpy(ret, "main"); break;
 		case I386: strcpy(ret, "main"); break; 
 		case ALPHA: strcpy(ret, "main"); break; 
@@ -106,7 +106,7 @@ char *createFunctionHeader(char *name) {
 		case ITANIUM_64: break; /*TODO*/
 		case ARMv8:
 		case ARM_MAC: snprintf(head,bSize,
-                                           "\t.section __TEXT,__text\n\t.global _%s\n\t.p2align 2\n_%s:\n",
+                                           "\t.global %s\n\t.p2align 2\n%s:\n",
                                            name, name);
 							  break;
 		case ARMv7: break; /*TODO*/
