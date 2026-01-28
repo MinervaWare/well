@@ -194,7 +194,7 @@ void initArgParseArgs(wData *data, int argc, char **argv) {
 			char *buf;
 			data->main = fopen(argv[i], "r");
 			buf = calloc(128, sizeof(char));
-			snprintf(buf, "FATAL:: Failed to open file: %s", argv[i]);
+			snprintf(buf, sizeof(char)*128, "FATAL:: Failed to open file: %s", argv[i]);
 			WASSERT(data->main!=NULL, buf);
 			data->fileName = argv[i];
 			free(buf);

@@ -31,8 +31,8 @@ static enum cpuType CPU =
 #if defined __ARM_ARCH_7A__ || __ARM_ARCH_7R__ \
 		|| __ARM_ARCH_7M__ || __ARM_ARCH_7EM__
 	ARMv7;
-#elif defined __ARM_ARCH_8A__ || __ARM_ARCH_81A__ \
-		|| __ARM_ARCH_82A__
+#elif defined __ARM_ARCH_8A || __ARM_ARCH_8A__ || __ARM_ARCH_81A__ \
+		|| __ARM_ARCH_82A__ || __aarch64__
 	ARMv8;
 #endif
 #endif
@@ -53,6 +53,8 @@ static enum cpuType CPU =
 	MIPS;
 #elif defined __hppa__ || __HPPA__ || __hppa
 	HPPA;
+#else
+	I386; /*Default to x86*/
 #endif
 
 #define GETCPUSTR(cpu_t, str) \

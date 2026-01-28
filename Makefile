@@ -1,5 +1,5 @@
 CC= gcc
-CFLAGS= -g -O2 -std=c89 -pedantic-errors -Wdeclaration-after-statement -Wvla -Iinclude -Wall -Wframe-larger-than=2048  -Wno-implicit-function-declaration -Wno-unused-variable -Wno-unused-result 
+CFLAGS= -g -O2 -std=c89 -pedantic-errors -Wdeclaration-after-statement -Wvla -Iinclude -Wall -Wframe-larger-than=2048  -Wno-implicit-function-declaration -Wno-unused-variable -Wno-unused-result -Wno-strict-prototypes 
 CFLAGS_REL= -O2 -std=c89 -Iinclude -fomit-frame-pointer -fconserve-stack -Wall -Wframe-larger-than=2048  -Wno-implicit-function-declaration -Wno-unused-variable -Wno-unused-result
 
 SRCS:= $(wildcard src/*.c) \

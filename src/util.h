@@ -12,10 +12,18 @@
 #include <dirent.h>
 #include <ctype.h>
 
+#ifndef __INT32_TYPE__
 typedef int int32_t;
+#endif
+#ifndef __UINT32_TYPE__
 typedef unsigned int uint32_t;
+#endif
+#ifndef __INT64_TYPE__
 typedef long int int64_t;
+#endif
+#ifndef __UINT64_TYPE__
 typedef unsigned long int uint64_t;
+#endif
 
 #define WLOG(logLevel, _str) \
 	fprintf(stdout, "%s "#logLevel"  (%s:%d): %s\n", \
