@@ -4,6 +4,7 @@
 #include "cpu.h"
 
 #include "ALPHA.h"
+#include "PPC.h"
 #include "ARM_MAC.h"
 #include "AMDX8664.h"
 
@@ -105,12 +106,16 @@ char *createFunctionHeader(char *name) {
 						   break;				
 		case ITANIUM_64: break; /*TODO*/
 		case ARMv8:
-		case ARM_MAC: snprintf(head,bSize,
+		case ARM_MAC: snprintf(head, bSize,
                                            "\t.global %s\n\t.p2align 2\n%s:\n",
                                            name, name);
-							  break;
+			      break;
 		case ARMv7: break; /*TODO*/
-		case POWERPC: break; /*TODO*/
+		case POWERPC: snprintf(head, bSize,
+						"\t.global %s\n\t.align 3\n%s:"
+						"\n\t.quad .wl_%s,.TOC.@tocbase, 0\n.wl_%s:\n",
+						name, name, name, name); 
+			      break;
 		case RS6000: break; /*TODO*/
 		case SZ_IBM: break; /*TODO*/
 		case SPARC: break; /*TODO*/
@@ -259,7 +264,7 @@ char *getStackAllocation() {
 		case ARMv8:
 		case ARM_MAC: return stackAllocateARM_MAC(CPU);
 		case ARMv7: break; /*TODO*/
-		case POWERPC: break; /*TODO*/
+		case POWERPC: return stackAllocatePPC(CPU);
 		case RS6000: break; /*TODO*/
 		case SZ_IBM: break; /*TODO*/
 		case SPARC: break; /*TODO*/
@@ -307,7 +312,9 @@ void convertFunctions(AsmOut *out) {
 							asmInstruction = convertInstructionARM_MAC(out, *curIns);
 							break;
 				case ARMv7: break; /*TODO*/
-				case POWERPC: break; /*TODO*/
+				case POWERPC: 
+					    		asmInstruction = convertInstructionPPC(out, *curIns);
+							break;
 				case RS6000: break; /*TODO*/
 				case SZ_IBM: break; /*TODO*/
 				case SPARC: break; /*TODO*/
@@ -349,7 +356,7 @@ void convertFunctions(AsmOut *out) {
 				case ARMv8:
 				case ARM_MAC: deallocateStack = stackDeallocateARM_MAC();break;
 				case ARMv7: break; /*TODO*/
-				case POWERPC: break; /*TODO*/
+				case POWERPC: deallocateStack = stackDeallocatePPC();break;
 				case RS6000: break; /*TODO*/
 				case SZ_IBM: break; /*TODO*/
 				case SPARC: break; /*TODO*/
@@ -397,10 +404,10 @@ char *getAsmString(char *name, char *value) {
 		case ITANIUM_64: break; /*TODO*/
 		case ARMv8: /*Same as ARM_MAC*/
 		case ALPHA: /*Same as ARM_MAC*/
+		case POWERPC: /*Same as ARM_MAC*/
 		case ARM_MAC: snprintf(buf, sizeof(char)*bLen, "wl_str_%s:\n\t.asciz %s\n",
                            name, value);break;
 		case ARMv7: break; /*TODO*/
-		case POWERPC: break; /*TODO*/
 		case RS6000: break; /*TODO*/
 		case SZ_IBM: break; /*TODO*/
 		case SPARC: break; /*TODO*/
