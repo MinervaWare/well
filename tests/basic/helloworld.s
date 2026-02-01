@@ -1,7 +1,9 @@
+	.section	".opd","aw"
 	.global main
 	.align 3
 main:
 	.quad .wl_main,.TOC.@tocbase, 0
+	.section	".text"
 .wl_main:
 	mflr 0
 	std 0,16(1)
@@ -12,7 +14,8 @@ main:
 	addi 3,3,wl_str_text@toc@l
 	bl printf
 	nop
-	li 3,3
+	mr 9,3
+	li 3,0
 	addi 1,31,128
 	ld 0,16(1)
 	mtlr 0

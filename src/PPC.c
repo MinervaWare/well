@@ -7,6 +7,10 @@
  * At some point I'd also like to add SPU support.
  * */
 
+/*
+ * https://zenith.nsmbu.net/wiki/Custom_Code/PowerPC_Assembly_Cheatsheet
+ * */
+
 #include "PPC.h"
 
 char *stackAllocatePPC(enum cpuType cpu) {
@@ -106,6 +110,30 @@ char *PPCGetMoveInstructions(struct parserData *parser, Instruction *ins,
 						val2, val1, val2, val2, val1);
 			};
 		}	
+	} else {
+		var = queryLocalVariable(parser, ins->lineNum, ins->arguments[0]);
+		if(var!=NULL) {
+			snprintf(outBuf, sizeof(outBuf),
+					"\tlwz %s,%d(31)", 
+					val2, var->offset+PPC64RESERVEDGPOFFSET);
+		} else {
+			if(checkRegister(ins->arguments[0])&&
+					!checkRegister(ins->arguments[1])) {
+				var = queryLocalVariable(parser, ins->lineNum, ins->arguments[1]);
+				if(var!=NULL) {
+					snprintf(outBuf, sizeof(outBuf), 
+							"\tlwz %s,%d(31)\n", 
+							val1, var->offset+PPC64RESERVEDGPOFFSET);
+				}
+			} else if(checkRegister(ins->arguments[0])&&
+					checkRegister(ins->arguments[1])) {
+				snprintf(outBuf, sizeof(outBuf),
+						"\tmr %s,%s\n", val2, val1);
+			} else {
+				snprintf(outBuf, sizeof(outBuf),
+						"\tli %s,%s\n", val2, val1);
+			}
+		}
 	}
 	res = calloc(strlen(outBuf)+1, sizeof(char));
 	strcpy(res, outBuf);
@@ -138,9 +166,16 @@ char *convertInstructionPPC(AsmOut *out, Instruction ins) {
 		 * Call: call~ printf
 		 * */
 		if(!strcmp(ins.instruction, "call")) {
-			if(ins.argLen>0 && ins.arguments[0]!=NULL)
-				snprintf(outBuf, sizeof(char)*outlen, "\tbl %s\n\tnop\n", ins.arguments[0]);
-
+			if(ins.argLen>0 && ins.arguments[0]!=NULL) {
+				/*We have to move r3 to r9 for wl standard on external functions.*/
+				if(!doesFunctionExistInternal(out->parser, ins.arguments[0])) {
+					snprintf(outBuf, sizeof(char)*outlen,
+							"\tbl %s\n\tnop\n\tmr 9,3\n", ins.arguments[0]);
+				} else {
+					snprintf(outBuf, sizeof(char)*outlen, "\tbl %s\n\tnop\n",
+							ins.arguments[0]);
+				}
+			}
 		/*
 		 * Return: return~ 0
 		 * */
@@ -152,10 +187,10 @@ char *convertInstructionPPC(AsmOut *out, Instruction ins) {
 				else reg = mapRegisterPPC(ins.arguments[0]);
 				if(checkRegister(ins.arguments[0])) {
 					snprintf(outBuf, sizeof(char)*outlen,
-							"\tmr 3,%s\n%s", ins.arguments[0], dealloc);
+							"\tmr 3,%s\n%s", reg, dealloc);
 				} else {
 					snprintf(outBuf, sizeof(char)*outlen,
-							"\tli 3,%s\n%s", reg, dealloc);
+							"\tli 3,%s\n%s", ins.arguments[0], dealloc);
 				}
 				free(dealloc);
 				dealloc = NULL;

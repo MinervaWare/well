@@ -99,7 +99,7 @@ typedef struct {
 	char *funName;
 	char **data; 
 	int dataLength;
-    int capacity;
+	int capacity;
 	Scope scope;
 	FuncSubScopeData *subScopes;
 	int totalScopes, scopeCap;
@@ -148,6 +148,7 @@ struct parserData {
 Variable *getVarFrom(struct parserData *parser, char *name);
 Variable *queryLocalVariable(struct parserData *parser, 
 		int lineNum, char *var);
+int doesFunctionExistInternal(struct parserData *parser, char *name);
 
 void parseProgram(struct parserData *parser);
 struct parserData *initParser(wData *data);

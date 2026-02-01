@@ -112,8 +112,10 @@ char *createFunctionHeader(char *name) {
 			      break;
 		case ARMv7: break; /*TODO*/
 		case POWERPC: snprintf(head, bSize,
+					      	"\t.section\t\".opd\",\"aw\"\n"
 						"\t.global %s\n\t.align 3\n%s:"
-						"\n\t.quad .wl_%s,.TOC.@tocbase, 0\n.wl_%s:\n",
+						"\n\t.quad .wl_%s,.TOC.@tocbase, 0\n"
+						"\t.section\t\".text\"\n.wl_%s:\n",
 						name, name, name, name); 
 			      break;
 		case RS6000: break; /*TODO*/
@@ -363,8 +365,10 @@ void convertFunctions(AsmOut *out) {
 				case MIPS: break; /*TODO*/
 				case HPPA: break; /*TODO*/
 			};
-			if(deallocateStack!=NULL) strcat(deallocateStack, "\tret\n");
-			else deallocateStack = "\tret\n";
+			if(CPU!=POWERPC) {
+				if(deallocateStack!=NULL) strcat(deallocateStack, "\tret\n");
+				else deallocateStack = "\tret\n";
+			}
 			bufferSize+=strlen(deallocateStack)+2;
 			out->buffers.functions =
 				(char *)realloc(out->buffers.functions, bufferSize);

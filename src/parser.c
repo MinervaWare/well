@@ -568,6 +568,14 @@ void parseIfStateInstruction(Function *func, char *line, Instruction *ins) {
  * Function related functions
  * * * * */
 
+int doesFunctionExistInternal(struct parserData *parser, char *name) {
+	int i;
+	for(i=0;i<parser->totalFunctions;i++) {
+		if(!strcmp(parser->functions[i].funName, name))
+			return 1;
+	}
+	return 0;
+}
 
 void appendFuncArr(Function func, struct parserData *parser) {
 	int i;
