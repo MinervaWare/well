@@ -1,34 +1,44 @@
-	.text
+	.section	".opd","aw"
 	.global print
+	.align 3
 print:
-	lda $30, -16($30)
-	stq $26, 0($30)
-	stq $15, 8($30)
-	bis $31, $30, $15
-	jsr $26, printf
-	mov $15, $30
-	ldq $26, 0($30)
-	ldq $15, 8($30)
-	lda $30, 16($30)
-	ret $31, ($26), 1
-	ret
-	.text
+	.quad .wl_print,.TOC.@tocbase, 0
+	.section	".text"
+.wl_print:
+	mflr 0
+	std 0,16(1)
+	std 31,-8(1)
+	stdu 1,-128(1)
+	mr 31,1
+	bl printf
+	nop
+	mr 9,3
+	addi 1,31,128
+	ld 0,16(1)
+	mtlr 0
+	ld 31,-8(1)
+	blr
+	.section	".opd","aw"
 	.global main
+	.align 3
 main:
-	ldgp $29, 0($27)
-	lda $30, -16($30)
-	stq $26, 0($30)
-	stq $15, 8($30)
-	bis $31, $30, $15
-	lda $16, wl_str_text
-	jsr $26, print
-	ldgp $29, 0($26)
-	bis $31, 0, $1
-	mov $1, $0
-	mov $15, $30
-	ldq $26, 0($30)
-	ldq $15, 8($30)
-	lda $30, 16($30)
-	ret $31, ($26), 1
+	.quad .wl_main,.TOC.@tocbase, 0
+	.section	".text"
+.wl_main:
+	mflr 0
+	std 0,16(1)
+	std 31,-8(1)
+	stdu 1,-128(1)
+	mr 31,1
+	addis 3,2,wl_str_text@toc@ha
+	addi 3,3,wl_str_text@toc@l
+	bl print
+	nop
+	li 3,0
+	addi 1,31,128
+	ld 0,16(1)
+	mtlr 0
+	ld 31,-8(1)
+	blr
 wl_str_text:
 	.asciz "Hello World!\n"

@@ -30,10 +30,10 @@ This is the list of actively maintained architectures for Wellang. This does not
 * [x] ARM_MAC (aarch64 - ARMv8)
 * [ ] ARMv7 (aarch32)
 * [ ] ITANIUM_64
-* [ ] POWERPC 
+* [x] POWERPC (ppc64, tested with the Cell Power4) 
 * [ ] RS6000 (This is for POWER, seperate from PPC)
 * [ ] SPARC
-* [ ] SZ_IBM (s370/390)
+* [ ] SZ_IBM (s390, testing under Z/VM 4.4)
 * [ ] MIPS (For now this will just be 64-bit little endian)
 * [ ] HPPA
 
