@@ -39,7 +39,7 @@ void PPCGetLVTAlloc(char *buf, size_t bSize, Variable *var) {
 	switch(var->type) {
 		case CHAR:
 		case INT: snprintf(buf, bSize, 
-					  "\tli 11,%s\n\tstw 11,%d(31)\n",
+					  "\tli 11,%s\n\tstd 11,%d(31)\n",
 					  value, offset+PPC64RESERVEDGPOFFSET);
 			  break;
 		case STRING: snprintf(buf, bSize,
@@ -133,7 +133,7 @@ char *PPCGetMoveInstructions(struct parserData *parser, Instruction *ins,
 		var = queryLocalVariable(parser, ins->lineNum, ins->arguments[0]);
 		if(var!=NULL) {
 			snprintf(outBuf, sizeof(outBuf),
-					"\tlwz %s,%d(31)\n", 
+					"\tld %s,%d(31)\n", 
 					val2, var->offset+PPC64RESERVEDGPOFFSET);
 		} else {
 			if(checkRegister(ins->arguments[0])&&
@@ -141,7 +141,7 @@ char *PPCGetMoveInstructions(struct parserData *parser, Instruction *ins,
 				var = queryLocalVariable(parser, ins->lineNum, ins->arguments[1]);
 				if(var!=NULL) {
 					snprintf(outBuf, sizeof(outBuf), 
-							"\tlwz %s,%d(31)\n", 
+							"\tld %s,%d(31)\n", 
 							val1, var->offset+PPC64RESERVEDGPOFFSET);
 				}
 			} else if(checkRegister(ins->arguments[0])&&
@@ -158,6 +158,16 @@ char *PPCGetMoveInstructions(struct parserData *parser, Instruction *ins,
 	strcpy(res, outBuf);
 	return res;
 }
+
+char *getIfStateCmpPPC(char *arg) {
+	if(!strcmp(arg, "je")) return "beq";
+	else if(!strcmp(arg, "jne")) return "bne";
+	else if(!strcmp(arg, "jle")) return "blt";
+	else if(!strcmp(arg, "jge")) return "bgt";
+	return NULL;
+}
+
+
 
 char *convertInstructionPPC(AsmOut *out, Instruction ins) {
 	int args = ins.argLen;
