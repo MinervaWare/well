@@ -1,100 +1,166 @@
+	.section	".opd","aw"
 	.global jeT
-	.p2align 2
+	.align 3
 jeT:
-	sub sp, sp, #32
-	stp x29, x30, [sp, #32]
-	add x29, sp, #32
-	adrp x28, wl_str_jets
-	add x28, x28, :lo12:wl_str_jets
-	str x28, [sp, 8]
-	mov x28, 10
-	str x28, [sp, #16]
-	ldr x28, [sp, 16]
-	cmp x28, #10
-	beq .wl_jeT_is_0
+	.quad .wl_jeT,.TOC.@tocbase, 0
+	.section	".text"
+.wl_jeT:
+	mflr 0
+	std 0,16(1)
+	std 31,-8(1)
+	stdu 1,-128(1)
+	mr 31,1
+	addis 11,2,wl_str_jets@toc@ha
+	addi 11,11,wl_str_jets@toc@l
+	std 11,56(31)
+	li 11,10
+	std 11,64(31)
+	ld 11,64(31)
+	cmpwi 0,10,11
+	beq 0,.wl_jeT_is_0
 .wl_jeT_is_0_cont:
-	ldp x29, x30, [sp, #32]
-	add sp, sp, #32
-	ret
+	addi 1,31,128
+	ld 0,16(1)
+	mtlr 0
+	ld 31,-8(1)
+	blr
 .wl_jeT_is_0:
+	li 3,jets
+	ld 4,64(31)
 	bl printf
+	nop
+	mr 9,3
+	bl .wl_jeT_is_0_cont
+	.section	".opd","aw"
 	.global jneT
-	.p2align 2
+	.align 3
 jneT:
-	sub sp, sp, #32
-	stp x29, x30, [sp, #32]
-	add x29, sp, #32
-	adrp x28, wl_str_jnets
-	add x28, x28, :lo12:wl_str_jnets
-	str x28, [sp, 8]
-	mov x28, 5
-	str x28, [sp, #16]
-	ldr x28, [sp, 16]
-	cmp x28, #10
-	bne .wl_jneT_is_0
+	.quad .wl_jneT,.TOC.@tocbase, 0
+	.section	".text"
+.wl_jneT:
+	mflr 0
+	std 0,16(1)
+	std 31,-8(1)
+	stdu 1,-128(1)
+	mr 31,1
+	addis 11,2,wl_str_jnets@toc@ha
+	addi 11,11,wl_str_jnets@toc@l
+	std 11,56(31)
+	li 11,5
+	std 11,64(31)
+	ld 11,64(31)
+	cmpwi 0,10,11
+	bne 0,.wl_jneT_is_0
 .wl_jneT_is_0_cont:
-	ldp x29, x30, [sp, #32]
-	add sp, sp, #32
-	ret
+	addi 1,31,128
+	ld 0,16(1)
+	mtlr 0
+	ld 31,-8(1)
+	blr
 .wl_jneT_is_0:
+	ld 3,56(31)
+	ld 4,64(31)
 	bl printf
+	nop
+	mr 9,3
+	bl .wl_jneT_is_0_cont
+	.section	".opd","aw"
 	.global jgeT
-	.p2align 2
+	.align 3
 jgeT:
-	sub sp, sp, #32
-	stp x29, x30, [sp, #32]
-	add x29, sp, #32
-	adrp x28, wl_str_jgets
-	add x28, x28, :lo12:wl_str_jgets
-	str x28, [sp, 8]
-	mov x28, 11
-	str x28, [sp, #16]
-	ldr x28, [sp, 16]
-	cmp x28, #10
-	bne .wl_jgeT_is_0
+	.quad .wl_jgeT,.TOC.@tocbase, 0
+	.section	".text"
+.wl_jgeT:
+	mflr 0
+	std 0,16(1)
+	std 31,-8(1)
+	stdu 1,-128(1)
+	mr 31,1
+	addis 11,2,wl_str_jgets@toc@ha
+	addi 11,11,wl_str_jgets@toc@l
+	std 11,56(31)
+	li 11,11
+	std 11,64(31)
+	ld 11,64(31)
+	cmpwi 0,10,11
+	bne 0,.wl_jgeT_is_0
 .wl_jgeT_is_0_cont:
-	ldp x29, x30, [sp, #32]
-	add sp, sp, #32
-	ret
+	addi 1,31,128
+	ld 0,16(1)
+	mtlr 0
+	ld 31,-8(1)
+	blr
 .wl_jgeT_is_0:
+	ld 3,56(31)
+	ld 4,64(31)
 	bl printf
+	nop
+	mr 9,3
+	bl .wl_jgeT_is_0_cont
+	.section	".opd","aw"
 	.global jleT
-	.p2align 2
+	.align 3
 jleT:
-	sub sp, sp, #32
-	stp x29, x30, [sp, #32]
-	add x29, sp, #32
-	adrp x28, wl_str_jlets
-	add x28, x28, :lo12:wl_str_jlets
-	str x28, [sp, 8]
-	mov x28, 9
-	str x28, [sp, #16]
-	ldr x28, [sp, 16]
-	cmp x28, #10
-	ble .wl_jleT_is_0
+	.quad .wl_jleT,.TOC.@tocbase, 0
+	.section	".text"
+.wl_jleT:
+	mflr 0
+	std 0,16(1)
+	std 31,-8(1)
+	stdu 1,-128(1)
+	mr 31,1
+	addis 11,2,wl_str_jlets@toc@ha
+	addi 11,11,wl_str_jlets@toc@l
+	std 11,56(31)
+	li 11,9
+	std 11,64(31)
+	ld 11,64(31)
+	cmpwi 0,10,11
+	blt 0,.wl_jleT_is_0
 .wl_jleT_is_0_cont:
-	ldp x29, x30, [sp, #32]
-	add sp, sp, #32
-	ret
+	addi 1,31,128
+	ld 0,16(1)
+	mtlr 0
+	ld 31,-8(1)
+	blr
 .wl_jleT_is_0:
+	ld 3,56(31)
+	ld 4,64(31)
 	bl printf
+	nop
+	mr 9,3
+	bl .wl_jleT_is_0_cont
+	.section	".opd","aw"
 	.global main
-	.p2align 2
+	.align 3
 main:
-	sub sp, sp, #32
-	stp x29, x30, [sp, #32]
-	add x29, sp, #32
-	adrp x0,wl_str_iftest
-	add x0, x0, :lo12:wl_str_iftest
+	.quad .wl_main,.TOC.@tocbase, 0
+	.section	".text"
+.wl_main:
+	mflr 0
+	std 0,16(1)
+	std 31,-8(1)
+	stdu 1,-128(1)
+	mr 31,1
+	addis 3,2,wl_str_iftest@toc@ha
+	addi 3,3,wl_str_iftest@toc@l
 	bl printf
+	nop
+	mr 9,3
 	bl jeT
+	nop
 	bl jneT
+	nop
 	bl jgeT
+	nop
 	bl jleT
-	mov x0, #0
-	ldp x29, x30, [sp, #32]
-	add sp, sp, #32
-	ret
+	nop
+	li 3,0
+	addi 1,31,128
+	ld 0,16(1)
+	mtlr 0
+	ld 31,-8(1)
+	blr
 wl_str_iftest:
 	.asciz "- - - If Statement Operator Tests - - -\n"
 wl_str_jets:

@@ -225,7 +225,8 @@ char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 								convertInstructionARM_MAC(out, *curIns);
 							break;
 				case ARMv7: break; /*TODO*/
-				case POWERPC: break; /*TODO*/
+				case POWERPC: asmInstruction =
+					      	convertInstructionPPC(out, *curIns); break;
 				case RS6000: break; /*TODO*/
 				case SZ_IBM: break; /*TODO*/
 				case SPARC: break; /*TODO*/
@@ -250,6 +251,9 @@ char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 									 "\tb .%s_cont\n",
 									 func->subScopes[i].scope.scopeName);
 						  break;
+			case POWERPC: snprintf(ret, (strlen(ret)+128)*sizeof(char),
+						      "\tbl .%s_cont\n",
+						      func->subScopes[i].scope.scopeName);
 			default: break;
 		};
 		res = (char *)realloc(res, sizeof(char)*bufferSize);
