@@ -159,7 +159,9 @@ char *getLVTAllocation(Function *func) {
 							break; 
 				case ITANIUM_64: break; /*TODO*/
 				case ARMv7: break; /*TODO*/
-				case POWERPC: break; /*TODO*/
+				case POWERPC: PPCGetLVTAlloc(buf, sizeof(char)*bSize,
+							      &func->lvt->variables[i]);
+					      break;
 				case RS6000: break; /*TODO*/
 				case SZ_IBM: break; /*TODO*/
 				case SPARC: break; /*TODO*/

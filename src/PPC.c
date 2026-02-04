@@ -33,7 +33,25 @@ char *stackDeallocatePPC() {
 }                                                                                        
 
 void PPCGetLVTAlloc(char *buf, size_t bSize, Variable *var) {
-
+	char *vName = var->varName;
+	char *value = var->value;
+	int offset = var->offset;
+	switch(var->type) {
+		case CHAR:
+		case INT: snprintf(buf, bSize, 
+					  "\tli 11,%s\n\tstw 11,%d(31)\n",
+					  value, offset+PPC64RESERVEDGPOFFSET);
+			  break;
+		case STRING: snprintf(buf, bSize,
+					     "\taddis 11,2,wl_str_%s@toc@ha\n"
+					     "\taddi 11,11,wl_str_%s@toc@l\n"
+					     "\tstd 11,%d(31)\n",
+					     vName, vName, offset+PPC64RESERVEDGPOFFSET);
+			     break;
+		case FLOAT: break;
+		case VOID: break;
+		case ZERO: break;
+	};
 }
 
 char *mapRegisterPPC(char *reg) {
@@ -89,8 +107,8 @@ char *PPCGetMoveInstructions(struct parserData *parser, Instruction *ins,
 	char *res = NULL;
 	char outBuf[1024];
 	Variable *var = getVarFrom(parser, ins->arguments[0]);
-	if(var==NULL||parser==NULL||ins==NULL||val1==NULL||val2==NULL) return NULL;
-	if(var) {
+	/*if(var==NULL||parser==NULL||ins==NULL||val1==NULL||val2==NULL) return NULL;
+	*/if(var) {
 		if(var->varName!=NULL) {
 			switch(var->type) {
 				case INT: snprintf(outBuf, sizeof(outBuf), 
@@ -108,13 +126,14 @@ char *PPCGetMoveInstructions(struct parserData *parser, Instruction *ins,
 				default: snprintf(outBuf, sizeof(outBuf),
 						"\taddis %s,2,%s@toc@ha\n\taddi %s,%s,%s@toc@l\n",
 						val2, val1, val2, val2, val1);
+					 break;
 			};
-		}	
+		}
 	} else {
 		var = queryLocalVariable(parser, ins->lineNum, ins->arguments[0]);
 		if(var!=NULL) {
 			snprintf(outBuf, sizeof(outBuf),
-					"\tlwz %s,%d(31)", 
+					"\tlwz %s,%d(31)\n", 
 					val2, var->offset+PPC64RESERVEDGPOFFSET);
 		} else {
 			if(checkRegister(ins->arguments[0])&&
