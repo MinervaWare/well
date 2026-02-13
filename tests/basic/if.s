@@ -1,173 +1,136 @@
-	.section	".opd","aw"
+	.text
 	.global jeT
-	.align 3
 jeT:
-	.quad .wl_jeT,.TOC.@tocbase, 0
-	.section	".text"
-.wl_jeT:
-	mflr 0
-	std 0,16(1)
-	std 31,-8(1)
-	stdu 1,-128(1)
-	mr 31,1
-	addis 11,2,wl_str_jets@toc@ha
-	addi 11,11,wl_str_jets@toc@l
-	std 11,56(31)
-	li 11,10
-	std 11,64(31)
-	ld 11,64(31)
-	cmpwi 0,10,11
-	beq 0,.wl_jeT_is_0
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $32, %rsp
+	movq wl_str_jets(%rip), %r10
+	movq %r10, -8(%rbp)
+	movq $10, -16(%rbp)
+	cmpq $10, -16(%rbp)
+	je .wl_jeT_is_0
 .wl_jeT_is_0_cont:
-	addi 1,31,128
-	ld 0,16(1)
-	mtlr 0
-	ld 31,-8(1)
-	blr
+	addq $32, %rsp
+	popq %rbp
+	ret
 .wl_jeT_is_0:
-	li 3,jets
-	ld 4,64(31)
-	bl printf
-	nop
-	mr 9,3
-	bl .wl_jeT_is_0_cont
-	.section	".opd","aw"
+	movq -8(%rbp),%rdi
+	movq -16(%rbp),%rsi
+	call printf
+	jmp .wl_jeT_is_0_cont
+	.text
 	.global jneT
-	.align 3
 jneT:
-	.quad .wl_jneT,.TOC.@tocbase, 0
-	.section	".text"
-.wl_jneT:
-	mflr 0
-	std 0,16(1)
-	std 31,-8(1)
-	stdu 1,-128(1)
-	mr 31,1
-	addis 11,2,wl_str_jnets@toc@ha
-	addi 11,11,wl_str_jnets@toc@l
-	std 11,56(31)
-	li 11,5
-	std 11,64(31)
-	ld 11,64(31)
-	cmpwi 0,10,11
-	bne 0,.wl_jneT_is_0
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $32, %rsp
+	movq wl_str_jnets(%rip), %r10
+	movq %r10, -8(%rbp)
+	movq $5, -16(%rbp)
+	cmpq $10, -16(%rbp)
+	jne .wl_jneT_is_0
 .wl_jneT_is_0_cont:
-	addi 1,31,128
-	ld 0,16(1)
-	mtlr 0
-	ld 31,-8(1)
-	blr
+	addq $32, %rsp
+	popq %rbp
+	ret
 .wl_jneT_is_0:
-	ld 3,56(31)
-	ld 4,64(31)
-	bl printf
-	nop
-	mr 9,3
-	bl .wl_jneT_is_0_cont
-	.section	".opd","aw"
+	movq -8(%rbp),%rdi
+	movq -16(%rbp),%rsi
+	call printf
+	jmp .wl_jneT_is_0_cont
+	.text
 	.global jgeT
-	.align 3
 jgeT:
-	.quad .wl_jgeT,.TOC.@tocbase, 0
-	.section	".text"
-.wl_jgeT:
-	mflr 0
-	std 0,16(1)
-	std 31,-8(1)
-	stdu 1,-128(1)
-	mr 31,1
-	addis 11,2,wl_str_jgets@toc@ha
-	addi 11,11,wl_str_jgets@toc@l
-	std 11,56(31)
-	li 11,11
-	std 11,64(31)
-	ld 11,64(31)
-	cmpwi 0,10,11
-	bne 0,.wl_jgeT_is_0
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $32, %rsp
+	movq wl_str_jgets(%rip), %r10
+	movq %r10, -8(%rbp)
+	movq $11, -16(%rbp)
+	cmpq $10, -16(%rbp)
+	jne .wl_jgeT_is_0
 .wl_jgeT_is_0_cont:
-	addi 1,31,128
-	ld 0,16(1)
-	mtlr 0
-	ld 31,-8(1)
-	blr
+	addq $32, %rsp
+	popq %rbp
+	ret
 .wl_jgeT_is_0:
-	ld 3,56(31)
-	ld 4,64(31)
-	bl printf
-	nop
-	mr 9,3
-	bl .wl_jgeT_is_0_cont
-	.section	".opd","aw"
+	movq -8(%rbp),%rdi
+	movq -16(%rbp),%rsi
+	call printf
+	jmp .wl_jgeT_is_0_cont
+	.text
 	.global jleT
-	.align 3
 jleT:
-	.quad .wl_jleT,.TOC.@tocbase, 0
-	.section	".text"
-.wl_jleT:
-	mflr 0
-	std 0,16(1)
-	std 31,-8(1)
-	stdu 1,-128(1)
-	mr 31,1
-	addis 11,2,wl_str_jlets@toc@ha
-	addi 11,11,wl_str_jlets@toc@l
-	std 11,56(31)
-	li 11,9
-	std 11,64(31)
-	ld 11,64(31)
-	cmpwi 0,10,11
-	blt 0,.wl_jleT_is_0
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $32, %rsp
+	movq wl_str_jlets(%rip), %r10
+	movq %r10, -8(%rbp)
+	movq $9, -16(%rbp)
+	cmpq $10, -16(%rbp)
+	jle .wl_jleT_is_0
 .wl_jleT_is_0_cont:
-	addi 1,31,128
-	ld 0,16(1)
-	mtlr 0
-	ld 31,-8(1)
-	blr
+	addq $32, %rsp
+	popq %rbp
+	ret
 .wl_jleT_is_0:
-	ld 3,56(31)
-	ld 4,64(31)
-	bl printf
-	nop
-	mr 9,3
-	bl .wl_jleT_is_0_cont
-	.section	".opd","aw"
+	movq -8(%rbp),%rdi
+	movq -16(%rbp),%rsi
+	call printf
+	jmp .wl_jleT_is_0_cont
+	.text
 	.global main
-	.align 3
 main:
-	.quad .wl_main,.TOC.@tocbase, 0
-	.section	".text"
-.wl_main:
-	mflr 0
-	std 0,16(1)
-	std 31,-8(1)
-	stdu 1,-128(1)
-	mr 31,1
-	addis 3,2,wl_str_iftest@toc@ha
-	addi 3,3,wl_str_iftest@toc@l
-	bl printf
-	nop
-	mr 9,3
-	bl jeT
-	nop
-	bl jneT
-	nop
-	bl jgeT
-	nop
-	bl jleT
-	nop
-	li 3,0
-	addi 1,31,128
-	ld 0,16(1)
-	mtlr 0
-	ld 31,-8(1)
-	blr
-wl_str_iftest:
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $32, %rsp
+	movq wl_str_iftest(%rip),%rdi
+	call printf
+	call jeT
+	call jneT
+	call jgeT
+	call jleT
+	movq %rdi, %rax
+	addq $32, %rsp
+	popq %rbp
+	ret
+	.text
+	.global wl_str_iftest
+.rawwl_striftest:
 	.asciz "- - - If Statement Operator Tests - - -\n"
-wl_str_jets:
+	.data
+	.align 8
+wl_str_iftest:
+	.quad .rawwl_striftest
+	.text
+	.global wl_str_jets
+.rawwl_strjets:
 	.asciz "(i == 10) pass\n"
-wl_str_jnets:
+	.data
+	.align 8
+wl_str_jets:
+	.quad .rawwl_strjets
+	.text
+	.global wl_str_jnets
+.rawwl_strjnets:
 	.asciz "(i != 10) pass\n"
-wl_str_jgets:
+	.data
+	.align 8
+wl_str_jnets:
+	.quad .rawwl_strjnets
+	.text
+	.global wl_str_jgets
+.rawwl_strjgets:
 	.asciz "(i >= 10) pass\n"
-wl_str_jlets:
+	.data
+	.align 8
+wl_str_jgets:
+	.quad .rawwl_strjgets
+	.text
+	.global wl_str_jlets
+.rawwl_strjlets:
 	.asciz "(i <= 10) pass\n"
+	.data
+	.align 8
+wl_str_jlets:
+	.quad .rawwl_strjlets
