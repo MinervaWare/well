@@ -183,7 +183,6 @@ char *ARM_MACgetMoveInstructions(struct parserData *parser, Instruction *ins,
 	char *res = NULL;
 	char outBuf[1024];
 	Variable *var = getVarFrom(parser, ins->arguments[0]);
-	if(var==NULL||parser==NULL||ins==NULL||val1==NULL||val2==NULL) return NULL;
 	if(var) {
 		if(var->varName!=NULL) {
 			switch(var->type) {
@@ -349,7 +348,9 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 		if(!strcmp(ins.instruction, "call")) {
 			if(ins.argLen>0 && ins.arguments[0]!=NULL) {
 				if(CPU!=ARM_MAC) snprintf(outBuf, sizeof(char)*outlen, "\tbl %s\n", ins.arguments[0]);
-				else snprintf(outBuf, sizeof(char)*outlen, "\tbl _%s\n", ins.arguments[0]);
+				else if(!doesFunctionExistInternal(out->parser, ins.arguments[0])) {
+					snprintf(outBuf, sizeof(char)*outlen, "\tbl _%s\n", ins.arguments[0]);
+				} else snprintf(outBuf, sizeof(char)*outlen, "\tbl %s\n", ins.arguments[0]);
 			}
 		/*
 		 * Return

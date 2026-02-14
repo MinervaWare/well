@@ -1,54 +1,47 @@
-	.text
 	.global switch
+	.p2align 2
 switch:
-	pushq %rbp
-	movq %rsp, %rbp
-	subq $32, %rsp
-	movq $0, -8(%rbp)
-	movq %rdi,-8(%rbp)
-	movq %rsi,%rdi
-	movq -8(%rbp),%rsi
-	addq $32, %rsp
-	popq %rbp
+	sub sp, sp, #32
+	stp x29, x30, [sp, #32]
+	add x29, sp, #32
+	mov x28, 0
+	str x28, [sp, #8]
+	str x0, [sp, #8]
+	mov x0, x1
+	ldr x1, [sp, #8]
+	ldp x29, x30, [sp, #32]
+	add sp, sp, #32
 	ret
-	.text
-	.global main
-main:
-	pushq %rbp
-	movq %rsp, %rbp
-	subq $32, %rsp
-	movq wl_str_testLocal(%rip), %r10
-	movq %r10, -8(%rbp)
-	movq $5, -16(%rbp)
-	movq $2, -24(%rbp)
-	movq wl_str_sw(%rip), %r10
-	movq %r10, -32(%rbp)
-	movq -8(%rbp),%rdi
-	call printf
-	movq -16(%rbp),%rdi
-	movq -24(%rbp),%rsi
-	call switch
-	movq %rsi,%rdx
-	movq %rdi,%rsi
-	movq -32(%rbp),%rdi
-	call printf
-	movq %rdi, %rax
-	addq $32, %rsp
-	popq %rbp
+	.global _main
+	.p2align 2
+_main:
+	sub sp, sp, #32
+	stp x29, x30, [sp, #32]
+	add x29, sp, #32
+	adrp x28, wl_str_testLocal@PAGE
+	add x28, x28, wl_str_testLocal@PAGEOFF
+	str x28, [sp, 8]
+	mov x28, 5
+	str x28, [sp, #16]
+	mov x28, 2
+	str x28, [sp, #24]
+	adrp x28, wl_str_sw@PAGE
+	add x28, x28, wl_str_sw@PAGEOFF
+	str x28, [sp, 32]
+	ldr x0, [sp, #8]
+	bl _printf
+	ldr x0, [sp, #16]
+	ldr x1, [sp, #24]
+	bl switch
+	mov x2, x1
+	mov x1, x0
+	ldr x0, [sp, #32]
+	bl _printf
+	mov x0, #0
+	ldp x29, x30, [sp, #32]
+	add sp, sp, #32
 	ret
-	.text
-	.global wl_str_testLocal
-.rawwl_strtestLocal:
-	.asciz "I am the Walrus\n"
-	.data
-	.align 8
 wl_str_testLocal:
-	.quad .rawwl_strtestLocal
-	.text
-	.global wl_str_sw
-.rawwl_strsw:
-	.asciz "a: %d, b: %d\n"
-	.data
-	.align 8
+	.asciz "I am the Walrus\n"
 wl_str_sw:
-	.quad .rawwl_strsw
+	.asciz "a: %d, b: %d\n"
