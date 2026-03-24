@@ -36,7 +36,8 @@ enum varTypes {
 	STRING,
 	FLOAT,
 	VOID,
-	ZERO
+	ZERO,
+	ANY /*variadic arguments*/
 };
 
 /*
@@ -112,9 +113,15 @@ struct Directives {
 	/*TODO add more comp directives*/
 };
 
+typedef struct {
+	char *name;
+	enum varTypes *argTypes;
+	unsigned int argSize, argCap;
+} ExternData;
+
 struct Externs {
-	char **externs;
-	int externSize;
+	ExternData *externs;
+	int size;
 	int capacity;
 };
 
@@ -148,7 +155,10 @@ struct parserData {
 Variable *getVarFrom(struct parserData *parser, char *name);
 Variable *queryLocalVariable(struct parserData *parser, 
 		int lineNum, char *var);
+
 int doesFunctionExistInternal(struct parserData *parser, char *name);
+
+ExternData *getExternalData(struct parserData *parser, char *name);
 
 void parseProgram(struct parserData *parser);
 struct parserData *initParser(wData *data);

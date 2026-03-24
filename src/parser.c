@@ -15,6 +15,7 @@ char *getWT(enum wTypes t);
 char *getScopeName(char *line);
 Scope getScopeAt(int lineNum, struct parserData *parser);
 Scope getNextScope(Scope scope, struct parserData *parser);
+enum varTypes varStrToEnum(char *type);
 Variable *getVarFrom(struct parserData *parser, char *name);
 Variable *queryLocalVariable(struct parserData *parser, 
 		int lineNum, char *var);
@@ -186,6 +187,17 @@ void setVariableType(Variable *var, char *type,
 	}
 	WLOG_WERROR(WERROR_UNDEFINED_TYPE,
 			file, lineNum, "constants", "");
+}
+
+enum varTypes varStrToEnum(char *type) {
+	if(!strcmp(type, "string")) return STRING;
+	else if(!strcmp(type, "char")) return CHAR;
+	else if(!strcmp(type, "int")) return INT;
+	else if(!strcmp(type, "float")) return FLOAT;
+	else if(!strcmp(type, "void")) return VOID;
+	else if(!strcmp(type, "zero")) return ZERO;
+	else if(!strcmp(type, "Any")) return ANY;
+	return INT;
 }
 
 Variable *getVarFrom(struct parserData *parser, char *name) {
@@ -890,12 +902,53 @@ void getCompTimeDirectives(struct parserData *parser) {
  * Extern handling
  * */
 
+ExternData *getExternalData(struct parserData *parser, char *name) {
+	int i;
+	for(i=0;i<parser->externals.size;i++) {
+		ExternData *data = &parser->externals.externs[i];
+		if(!strcmp(data->name, name)) return data;
+	}
+	return NULL;
+}
+
+/*~extern foo:(string, int, Any)*/
+void stripExternalArgData(ExternData *data, char *line) {
+	char *pArgData;
+	if(!data||!line) return;
+	if(!data->argTypes&&!data->argCap) {
+		data->argCap = 25;
+		data->argTypes = calloc(data->argCap, sizeof(enum varTypes));
+		data->argSize = 0;
+	}
+	pArgData = calloc(strlen(line)+1, sizeof(char));
+	strcpy(pArgData, line);
+	line = strtok(line, ":");
+	pArgData = strstr(pArgData, "(");
+	if(pArgData) {
+		char *type;
+		pArgData++;
+		if(pArgData[strlen(pArgData)-1]==')') pArgData[strlen(pArgData)-1] = '\0';
+		type = strtok(pArgData, ",");
+		while(type) {
+			while(type[0]==' ') type++;
+			if(data->argSize>=data->argCap) {
+				data->argCap += 25;
+				data->argTypes = (enum varTypes *)realloc(data->argTypes,
+						sizeof(enum varTypes)*data->argCap);
+			}
+			data->argTypes[data->argSize] = varStrToEnum(type);
+			data->argSize++;
+			type = strtok(NULL, ",");
+		}
+	}
+}
+
 void getExternals(struct parserData *parser) {
 	static int defaultArrSize = 100;
 	int i;
-	parser->externals.externs = calloc(defaultArrSize+2, sizeof(char *));
+	parser->externals.externs = calloc(defaultArrSize+2, sizeof(ExternData));
 	parser->externals.capacity = defaultArrSize;
-	parser->externals.externSize = 0;
+	parser->externals.size = 0;
 	for(i=0;i<MAXSCOPES&&parser->scopes[i].scopeName!=NULL;i++) {
 		if(parser->scopes[i].scopeType==EXTERN) {
 			char *external;
@@ -906,15 +959,19 @@ void getExternals(struct parserData *parser) {
 				external+=strlen("~extern");
 				while(external[0]==' ') external++;
 				while(external[strlen(external)-1]=='\n') external[strlen(external)-1] = '\0';
-				if(parser->externals.externSize>=parser->externals.capacity) {
+				if(parser->externals.size>=parser->externals.capacity) {
 					parser->externals.capacity*=2;
 					parser->externals.externs = 
-						(char **)realloc(parser->externals.externs, 
-								sizeof(char *)*parser->externals.capacity);
+						(ExternData *)realloc(parser->externals.externs, 
+								sizeof(ExternData)*parser->externals.capacity);
 				}
-				parser->externals.externs[parser->externals.externSize] = calloc(strlen(external)+1, sizeof(char));
-				strcpy(parser->externals.externs[parser->externals.externSize], external);
-				parser->externals.externSize++;
+				ExternData *data = &parser->externals.externs[parser->externals.size];
+				data->argTypes = NULL;
+				data->argCap = 0;
+				if(strstr(external, ":")) stripExternalArgData(data, external);
+				data->name = calloc(strlen(external)+1, sizeof(char));
+				strcpy(data->name, external);
+				parser->externals.size++;
 			} else {
 				WLOG_WERROR(WERROR_EXTERN_NOVALUE,
 						parser->fData->fileName, 

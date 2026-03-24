@@ -2,6 +2,7 @@
 
 ; Obviously you can just xor here, this is just to test locals.
 
+~extern printf:(string, Any)
 
 ~void:switch {
 	~int:tmp = 0

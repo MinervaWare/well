@@ -564,11 +564,12 @@ void convertExternals_Includes(AsmOut *out) {
 	int i;
 	out->buffers.externals = calloc(1, sizeof(char));
 	/*Externals*/
-	for(i=0;i<out->parser->externals.externSize;i++) {
-		char *curEx = calloc(strlen(out->parser->externals.externs[i])+1,sizeof(char));
+	for(i=0;i<out->parser->externals.size;i++) {
+		char *curEx = calloc(strlen(out->parser->externals.externs[i].name)+1,
+				sizeof(char));
 		char *buf;
 		int bLen;
-		strcpy(curEx, out->parser->externals.externs[i]);
+		strcpy(curEx, out->parser->externals.externs[i].name);
 		bLen = strlen(curEx)+100;
 		buf = calloc(bLen, sizeof(char));
 		snprintf(buf, sizeof(char)*bLen, "\t.extern %s\n", curEx);

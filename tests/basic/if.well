@@ -1,3 +1,5 @@
+~extern printf:(string, Any)
+
 ~constants {
 	~string:iftest = "- - - If Statement Operator Tests - - -\n"
 }

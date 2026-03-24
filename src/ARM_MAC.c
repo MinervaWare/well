@@ -11,24 +11,26 @@
 #include "cpu.h"
 #include "ARM_MAC.h"
 
+#define RESERVEDARGOFFSET 31
+
 MacRegData *macRegData = NULL;
 
 /*
  * Stack initialization is going to be large and unoptimized to local variables/structs.
- * This is because
+ * This will be fixed later depending on what we need.
  * */
 char *stackAllocateARM_MAC(enum cpuType cpu) {
 	char *ret = calloc(1024, sizeof(char));
 	CPU = cpu;
 	/*auto to 16*/
-	sprintf(ret, "\tsub sp, sp, #32\n\tstp x29, x30, [sp, #32]\n\tadd x29, sp, #32\n");
+	sprintf(ret, "\tsub sp, sp, #80\n\tstp x29, x30, [sp, #64]\n\tadd x29, sp, #64\n");
 	return ret; 
 }
 
 char *stackDeallocateARM_MAC() {
 	/*auto to 16*/
 	char *ret = calloc(1024, sizeof(char));
-	sprintf(ret, "\tldp x29, x30, [sp, #32]\n\tadd sp, sp, #32\n");
+	sprintf(ret, "\tldp x29, x30, [sp, #64]\n\tadd sp, sp, #80\n");
 	return ret; 
 }
 
@@ -55,28 +57,28 @@ void ARM_MACGetLVAlloc(char *buf, int bSize, Variable *var) {
 	int offset = var->offset;
 	switch(var->type) {
 		case INT: snprintf(buf, bSize,
-						  "\tmov x28, %s\n"
-						  "\tstr x28, [sp, #%d]\n",
-						  value, offset);
+						  "\tmov x15, %s\n"
+						  "\tstr x15, [sp, #%d]\n",
+						  value, offset+RESERVEDARGOFFSET);
 				  break;
 		case CHAR: snprintf(buf, bSize,
-						  "\tmov x28, #%d\n"
-						  "\tstr x28, [sp, #%d]\n",
-						  (int)value[0], offset);
+						  "\tmov x15, #%d\n"
+						  "\tstr x15, [sp, #%d]\n",
+						  (int)value[0], offset+RESERVEDARGOFFSET);
 				   break;
 		case STRING: {
 					if(CPU!=ARM_MAC) {
 						snprintf(buf, bSize,
-								"\tadrp x28, wl_str_%s\n"
-								"\tadd x28, x28, :lo12:wl_str_%s\n"
-								"\tstr x28, [sp, %d]\n",
-								vName, vName, offset);
+								"\tadrp x15, wl_str_%s\n"
+								"\tadd x15, x15, :lo12:wl_str_%s\n"
+								"\tstr x15, [sp, %d]\n",
+								vName, vName, offset+RESERVEDARGOFFSET);
 					} else {
 						snprintf(buf, bSize,
-								"\tadrp x28, wl_str_%s@PAGE\n"
-								"\tadd x28, x28, wl_str_%s@PAGEOFF\n"
-								"\tstr x28, [sp, %d]\n",
-								vName, vName, offset);
+								"\tadrp x15, wl_str_%s@PAGE\n"
+								"\tadd x15, x15, wl_str_%s@PAGEOFF\n"
+								"\tstr x15, [sp, %d]\n",
+								vName, vName, offset+RESERVEDARGOFFSET);
 					}
 					break;
 		}
@@ -162,7 +164,7 @@ char *ARM_MACgetCurrentVar(struct parserData *parser, Instruction *ins, int argS
 	} else {
 		v = NULL;
 		v = queryLocalVariable(parser, ins->lineNum, ins->arguments[argSpot]);
-		if(v!=NULL) snprintf(asmVName, sizeof(asmVName), "[sp, %d]", v->offset);
+		if(v!=NULL) snprintf(asmVName, sizeof(asmVName), "[sp, #%d]", v->offset+RESERVEDARGOFFSET);
 		else {
 			if(!atoi(ins->arguments[argSpot])&&
 					strcmp(ins->arguments[argSpot], "0")) {
@@ -218,15 +220,14 @@ char *ARM_MACgetMoveInstructions(struct parserData *parser, Instruction *ins,
 		var = queryLocalVariable(parser, ins->lineNum, ins->arguments[0]);
 		if(var) {
 			snprintf(outBuf, sizeof(outBuf),
-					"\tldr %s, [sp, #%d]\n", val2, var->offset);
+					"\tldr %s, [sp, #%d]\n", val2, var->offset+RESERVEDARGOFFSET);
 		} else {
 			if(checkRegister(ins->arguments[0])&&
 					!checkRegister(ins->arguments[1])) {
 				var = queryLocalVariable(parser, ins->lineNum, ins->arguments[1]);
 				if(var) {
 					snprintf(outBuf, sizeof(outBuf), 
-							"\tstr %s, [sp, #%d]\n", val1, var->offset);
-					printf("%s\n", outBuf);
+							"\tstr %s, [sp, #%d]\n", val1, var->offset+RESERVEDARGOFFSET);
 				}
 			} else if(checkRegister(ins->arguments[0])&&
 					checkRegister(ins->arguments[1])) {
@@ -282,13 +283,13 @@ char *ifStateConvertARM_MAC(AsmOut *out, Instruction *ins) {
 		free(var); var = NULL;
 	}
 	if(val1[0]=='[') { /*Local var*/
-		snprintf(outBuf, sizeof(outBuf), "\tldr x28, %s\n"
-										 "\tcmp x28, %s\n"
+		snprintf(outBuf, sizeof(outBuf), "\tldr x15, %s\n"
+										 "\tcmp x15, %s\n"
 										 "\t%s .%s\n.%s_cont:\n", 
 										 val1, val2, op, scopeName, scopeName);
 	} else if(val2[0]=='[') {
-		snprintf(outBuf, sizeof(outBuf), "\tldr x28, %s\n"
-										 "\tcmp x28, %s\n"
+		snprintf(outBuf, sizeof(outBuf), "\tldr x15, %s\n"
+										 "\tcmp x15, %s\n"
 										 "\t%s .%s\n.%s_cont:\n", 
 										 val2, val1, op, scopeName, scopeName);
 	} else {
@@ -304,6 +305,28 @@ char *ifStateConvertARM_MAC(AsmOut *out, Instruction *ins) {
 	return ret;
 }
 
+char *ARM_MACInitializeExternStackData(ExternData *data) {
+	if(!data) return "";
+	char *ret;
+	char outBuf[DEFMAXFSIZE] = "";	
+	unsigned int argSize = data->argSize;
+	int i = 0;
+	int j = 0;
+	int offset = 0;
+	for(;i<argSize;i++) {
+		if(data->argTypes[i]==ANY) {
+			for(j=i;j<7;j++) { /*every register after the variadic is included*/
+				char buf[1024];
+				snprintf(buf, sizeof(buf), "\tstr x%d, [sp, #%d]\n", j, offset);
+				strcat(outBuf, buf);
+				offset += 8;
+			}
+		}
+	}
+	ret = calloc(strlen(outBuf)+1, sizeof(char));
+	strcpy(ret, outBuf);
+	return ret;
+}
 
 /*x registers are 64-bit w registers are 32*/
 char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
@@ -349,7 +372,9 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 			if(ins.argLen>0 && ins.arguments[0]!=NULL) {
 				if(CPU!=ARM_MAC) snprintf(outBuf, sizeof(char)*outlen, "\tbl %s\n", ins.arguments[0]);
 				else if(!doesFunctionExistInternal(out->parser, ins.arguments[0])) {
-					snprintf(outBuf, sizeof(char)*outlen, "\tbl _%s\n", ins.arguments[0]);
+					char *init = ARM_MACInitializeExternStackData(
+							getExternalData(out->parser, ins.arguments[0]));
+					snprintf(outBuf, sizeof(char)*outlen, "%s\tbl _%s\n", init, ins.arguments[0]);
 				} else snprintf(outBuf, sizeof(char)*outlen, "\tbl %s\n", ins.arguments[0]);
 			}
 		/*
