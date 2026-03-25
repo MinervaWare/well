@@ -1,4 +1,7 @@
 ; logic.well
+
+~extern printf:(string, Any)
+
 ~constants {
 	~string:hello = "- - - Bitwise/Arithmetic logic test - - -\n"
 	~int:a = 1

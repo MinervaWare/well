@@ -1,11 +1,11 @@
-/*Copyright (c) 2024 Tristan Wellman*/
+/*Copyright (c) 2024-2026 MinervaWare LLC*/
+/*Copyright (c) 2022-2024 Tristan Wellman*/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "parser.h"
-/*Copyright (c) 2022-2025 MinervaWare LLC*/
 
 #include "asmout.h"
 #include "cpu.h"
@@ -306,13 +306,14 @@ char *ifStateConvertARM_MAC(AsmOut *out, Instruction *ins) {
 }
 
 char *ARM_MACInitializeExternStackData(ExternData *data) {
-	if(!data) return "";
 	char *ret;
 	char outBuf[DEFMAXFSIZE] = "";	
-	unsigned int argSize = data->argSize;
+	unsigned int argSize;
 	int i = 0;
 	int j = 0;
 	int offset = 0;
+	if(!data) return "";
+	argSize = data->argSize;
 	for(;i<argSize;i++) {
 		if(data->argTypes[i]==ANY) {
 			for(j=i;j<7;j++) { /*every register after the variadic is included*/
@@ -326,6 +327,35 @@ char *ARM_MACInitializeExternStackData(ExternData *data) {
 	ret = calloc(strlen(outBuf)+1, sizeof(char));
 	strcpy(ret, outBuf);
 	return ret;
+}
+
+void insertDefaultMappedArm3Instruction(char *outBuf, int outlen, char *instruction, Instruction *ins) {
+	if(!ins||!outBuf) return;
+	if(ins->arguments[0]!=NULL&&ins->arguments[1]!=NULL&&
+			ins->arguments[2]!=NULL) {
+		char *dest = mapRegister(ins->arguments[0]);
+		char *s1 = mapRegister(ins->arguments[1]);
+		char *s2 = mapRegister(ins->arguments[2]);
+		snprintf(outBuf, sizeof(char)*outlen, "\t%s %s, %s, %s\n",
+				instruction, dest, s1, s2, dest, dest);
+	}
+}
+
+void insertDefaultMappedArm3InstructionWithIdempotency(char *outBuf, int outlen,
+		char *instruction, short idempotency, Instruction *ins) {
+	if(!ins||!outBuf) return;
+	if(ins->arguments[0]!=NULL&&ins->arguments[1]!=NULL&&
+			ins->arguments[2]!=NULL) {
+		char *dest = mapRegister(ins->arguments[0]);
+		char *s1 = mapRegister(ins->arguments[1]);
+		char *s2 = mapRegister(ins->arguments[2]);
+		if((!strcmp(dest,s1)&&!strcmp(dest,s2))||!strcmp(s1,s2)) {
+			snprintf(outBuf, sizeof(char)*outlen, "\tmov %s, #%d\n", dest, idempotency);
+		} else {
+			snprintf(outBuf, sizeof(char)*outlen, "\t%s %s, %s, %s\n",
+					instruction, dest, s1, s2);
+		}
+	}
 }
 
 /*x registers are 64-bit w registers are 32*/
@@ -382,9 +412,17 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 		 * */
 		} else if(!strcmp(ins.instruction, "return")) {
 			if(ins.arguments[0]!=NULL) {
+				char *reg = NULL;
+				char *dealloc = stackDeallocateARM_MAC();
 				if(strlen(ins.arguments[0])==0) ins.arguments[0] = "0";
-				sprintf(outBuf, "\tmov x0, #%s\n%s\tret\n",
-						ins.arguments[0], stackDeallocateARM_MAC());
+				else reg = mapRegister(ins.arguments[0]);
+				if(reg!=NULL) {
+					snprintf(outBuf, sizeof(char)*outlen, "\tmov x0, %s\n%s\tret\n",
+							reg, dealloc);
+				} else {
+					snprintf(outBuf, sizeof(char)*outlen, "\tmov x0, #%s\n%s\tret\n",
+							ins.arguments[0], dealloc);
+				}
 			}
 
 		 /*
@@ -491,7 +529,103 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 			char *conv = ifStateConvertARM_MAC(out, &ins);
 			snprintf(outBuf, sizeof(char)*outlen, "%s", conv);
 			free(conv); conv = NULL;
+		
+		/* AND: and~ r1, r2, r3
+		 * r1 = r2&r3
+		 * */
+		} else if(!strcmp(ins.instruction, "and")) {
+			insertDefaultMappedArm3InstructionWithIdempotency(outBuf, sizeof(char)*outlen,
+					"and", 1, &ins);
+		
+		/* OR: or~ r1, r2, r3
+		 * r1 = r2|r3
+		 * */
+		} else if(!strcmp(ins.instruction, "or")) {
+			insertDefaultMappedArm3InstructionWithIdempotency(outBuf, sizeof(char)*outlen,
+					"orr", 1, &ins);
+
+		/* NOR: nor~ r1, r2, r3
+		 * r1 = !(r2|r3)
+		 * */
+		} else if(!strcmp(ins.instruction, "nor")) {
+			if(ins.arguments[0]!=NULL&&ins.arguments[1]!=NULL&&
+					ins.arguments[2]!=NULL) {
+				char *dest = mapRegister(ins.arguments[0]);
+				char *s1 = mapRegister(ins.arguments[1]);
+				char *s2 = mapRegister(ins.arguments[2]);
+				if((!strcmp(dest,s1)&&!strcmp(dest,s2))||!strcmp(s1,s2)) {
+					snprintf(outBuf, sizeof(char)*outlen, "\tmov %s, #0\n", dest);
+				} else {
+					snprintf(outBuf, sizeof(char)*outlen, "\torr %s, %s, %s\n\tmvn %s, %s\n",
+							dest, s1, s2, dest, dest);
+				}
+			}
+
+		/* NAND: nand~ r1, r2, r3
+		 * r1 = ~(r2&r3)
+		 * */
+		} else if(!strcmp(ins.instruction, "nand")) {
+			if(ins.arguments[0]!=NULL&&ins.arguments[1]!=NULL&&
+					ins.arguments[2]!=NULL) {
+				char *dest = mapRegister(ins.arguments[0]);
+				char *s1 = mapRegister(ins.arguments[1]);
+				char *s2 = mapRegister(ins.arguments[2]);
+				if((!strcmp(dest,s1)&&!strcmp(dest,s2))||!strcmp(s1,s2)) {
+					snprintf(outBuf, sizeof(char)*outlen, "\tmov %s, #0\n", dest);
+				} else {
+					snprintf(outBuf, sizeof(char)*outlen, "\tand %s, %s, %s\n\tmvn %s, %s\n",
+							dest, s1, s2, dest, dest);
+				}
+			}
+		
+		/* XOR: xor~ r1, r2, r3
+		 * r1 = r2^r3
+		 * */
+		} else if(!strcmp(ins.instruction, "xor")) {
+			insertDefaultMappedArm3Instruction(outBuf, sizeof(char)*outlen, "eor", &ins);
+
+		/*
+		 * Mathematical Instructions
+		 * */
+		/* ADD: add~ r1, r2, r3
+		 * r1 = r2+r3
+		 * */
+		} else if(!strcmp(ins.instruction, "add")) {
+			insertDefaultMappedArm3Instruction(outBuf, sizeof(char)*outlen, "add", &ins);
+			
+		/* SUB: sub~ r1, r2, r3
+		 * r1 = r2-r3
+		 * */
+		} else if(!strcmp(ins.instruction, "sub")) {
+			insertDefaultMappedArm3Instruction(outBuf, sizeof(char)*outlen, "subs", &ins);
+		
+		/* MUL: mul~ r1, r2, r3
+		 * r1 = r2*r3
+		 * */
+		} else if(!strcmp(ins.instruction, "mul")) {
+			insertDefaultMappedArm3Instruction(outBuf, sizeof(char)*outlen, "mul", &ins);
+
+		/* DIV: div~ r1, r2, r3
+		 * r1 = r2/r3
+		 * */
+		} else if(!strcmp(ins.instruction, "div")) {
+			insertDefaultMappedArm3Instruction(outBuf, sizeof(char)*outlen, "sdiv", &ins);
+
+		/* MOD: mod~ r1, r2, r3
+		 * r1 = r2%r3
+		 * */
+		} else if(!strcmp(ins.instruction, "mod")) {
+			if(ins.arguments[0]!=NULL&&ins.arguments[1]!=NULL&&
+					ins.arguments[2]!=NULL) {
+				char *dest = mapRegister(ins.arguments[0]);
+				char *s1 = mapRegister(ins.arguments[1]);
+				char *s2 = mapRegister(ins.arguments[2]);
+				snprintf(outBuf, sizeof(char)*outlen, 
+						"\tsdiv %s, %s, %s\n\tmul %s, %s, %s\n\tsub %s, %s, %s\n",
+						dest, s1, s2, dest, dest, dest, dest, s2, dest, s1, dest);
+			}
 		}
+
 	}
 
 	ret = calloc(strlen(outBuf)+1, sizeof(char));

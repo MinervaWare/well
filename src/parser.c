@@ -1,4 +1,5 @@
-/*Copyright (c) 2022-2025 MinervaWare LLC*/
+/*Copyright (c) 2024-2026 MinervaWare LLC*/
+/*Copyright (c) 2022-2024 Tristan Wellman*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -956,6 +957,7 @@ void getExternals(struct parserData *parser) {
 			strcpy(line, parser->fileBuffer[parser->scopes[i].lineNum]);
 			external = strstr(line, "~extern");
 			if(external!=NULL) {
+				ExternData *data;
 				external+=strlen("~extern");
 				while(external[0]==' ') external++;
 				while(external[strlen(external)-1]=='\n') external[strlen(external)-1] = '\0';
@@ -965,7 +967,7 @@ void getExternals(struct parserData *parser) {
 						(ExternData *)realloc(parser->externals.externs, 
 								sizeof(ExternData)*parser->externals.capacity);
 				}
-				ExternData *data = &parser->externals.externs[parser->externals.size];
+				data = &parser->externals.externs[parser->externals.size];
 				data->argTypes = NULL;
 				data->argCap = 0;
 				if(strstr(external, ":")) stripExternalArgData(data, external);

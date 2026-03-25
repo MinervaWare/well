@@ -7,7 +7,7 @@ _main:
 	adrp x0,wl_str_text@PAGE
 	add x0, x0, wl_str_text@PAGEOFF
 	bl _printf
-	mov x0, #0
+	mov x0, x0
 	ldp x29, x30, [sp, #64]
 	add sp, sp, #80
 	ret

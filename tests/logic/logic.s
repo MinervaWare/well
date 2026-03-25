@@ -1,124 +1,211 @@
-	.text
+	.extern printf
 	.global logic
+	.p2align 2
 logic:
-	pushq %rbp
-	movq %rsp, %rbp
-	subq $32, %rsp
-	movq wl_int_a(%rip),%rdi
-	movq %rdi, %rsi
-	notq %rsi
-	movq wl_str_ntest(%rip),%rdi
-	call printf
-	movq wl_int_a(%rip),%rdi
-	movq wl_int_b(%rip),%rsi
-	movq %rdi, %rdx
-	andq %rsi, %rdx
-	movq %rdx,%rsi
-	movq wl_str_atest(%rip),%rdi
-	call printf
-	movq wl_int_a(%rip),%rdi
-	movq wl_int_b(%rip),%rsi
-	movq %rdi, %rdx
-	orq %rsi, %rdx
-	movq %rdx,%rsi
-	movq wl_str_otest(%rip),%rdi
-	call printf
-	movq wl_int_a(%rip),%rdi
-	movq wl_int_b(%rip),%rsi
-	movq %rdi, %rdx
-	orq %rsi, %rdx
-	notq %rdx
-	movq %rdx,%rsi
-	movq wl_str_notest(%rip),%rdi
-	call printf
-	movq wl_int_a(%rip),%rdi
-	movq wl_int_b(%rip),%rsi
-	movq %rdi, %rdx
-	andq %rsi, %rdx
-	notq %rdx
-	movq %rdx,%rsi
-	movq wl_str_natest(%rip),%rdi
-	call printf
-	movq wl_int_a(%rip),%rdi
-	movq wl_int_b(%rip),%rsi
-	movq %rdi, %rdx
-	xorq %rdx, %rdx
-	movq %rdx,%rsi
-	movq wl_str_xtest(%rip),%rdi
-	call printf
-	addq $32, %rsp
-	popq %rbp
+	sub sp, sp, #80
+	stp x29, x30, [sp, #64]
+	add x29, sp, #64
+	adrp x0,wl_int_a@PAGE
+	ldr w0, [x0, wl_int_a@PAGEOFF]
+	mvn x1, x0
+	adrp x0,wl_str_ntest@PAGE
+	add x0, x0, wl_str_ntest@PAGEOFF
+	str x1, [sp, #0]
+	str x2, [sp, #8]
+	str x3, [sp, #16]
+	str x4, [sp, #24]
+	str x5, [sp, #32]
+	str x6, [sp, #40]
+	bl _printf
+	adrp x0,wl_int_a@PAGE
+	ldr w0, [x0, wl_int_a@PAGEOFF]
+	adrp x1,wl_int_b@PAGE
+	ldr w1, [x1, wl_int_b@PAGEOFF]
+	and x2, x0, x1
+	mov x1, x2
+	adrp x0,wl_str_atest@PAGE
+	add x0, x0, wl_str_atest@PAGEOFF
+	str x1, [sp, #0]
+	str x2, [sp, #8]
+	str x3, [sp, #16]
+	str x4, [sp, #24]
+	str x5, [sp, #32]
+	str x6, [sp, #40]
+	bl _printf
+	adrp x0,wl_int_a@PAGE
+	ldr w0, [x0, wl_int_a@PAGEOFF]
+	adrp x1,wl_int_b@PAGE
+	ldr w1, [x1, wl_int_b@PAGEOFF]
+	orr x2, x0, x1
+	mov x1, x2
+	adrp x0,wl_str_otest@PAGE
+	add x0, x0, wl_str_otest@PAGEOFF
+	str x1, [sp, #0]
+	str x2, [sp, #8]
+	str x3, [sp, #16]
+	str x4, [sp, #24]
+	str x5, [sp, #32]
+	str x6, [sp, #40]
+	bl _printf
+	adrp x0,wl_int_a@PAGE
+	ldr w0, [x0, wl_int_a@PAGEOFF]
+	adrp x1,wl_int_b@PAGE
+	ldr w1, [x1, wl_int_b@PAGEOFF]
+	orr x2, x0, x1
+	mvn x2, x2
+	mov x1, x2
+	adrp x0,wl_str_notest@PAGE
+	add x0, x0, wl_str_notest@PAGEOFF
+	str x1, [sp, #0]
+	str x2, [sp, #8]
+	str x3, [sp, #16]
+	str x4, [sp, #24]
+	str x5, [sp, #32]
+	str x6, [sp, #40]
+	bl _printf
+	adrp x0,wl_int_a@PAGE
+	ldr w0, [x0, wl_int_a@PAGEOFF]
+	adrp x1,wl_int_b@PAGE
+	ldr w1, [x1, wl_int_b@PAGEOFF]
+	and x2, x0, x1
+	mvn x2, x2
+	mov x1, x2
+	adrp x0,wl_str_natest@PAGE
+	add x0, x0, wl_str_natest@PAGEOFF
+	str x1, [sp, #0]
+	str x2, [sp, #8]
+	str x3, [sp, #16]
+	str x4, [sp, #24]
+	str x5, [sp, #32]
+	str x6, [sp, #40]
+	bl _printf
+	adrp x0,wl_int_a@PAGE
+	ldr w0, [x0, wl_int_a@PAGEOFF]
+	adrp x1,wl_int_b@PAGE
+	ldr w1, [x1, wl_int_b@PAGEOFF]
+	eor x2, x0, x1
+	mov x1, x2
+	adrp x0,wl_str_xtest@PAGE
+	add x0, x0, wl_str_xtest@PAGEOFF
+	str x1, [sp, #0]
+	str x2, [sp, #8]
+	str x3, [sp, #16]
+	str x4, [sp, #24]
+	str x5, [sp, #32]
+	str x6, [sp, #40]
+	bl _printf
+	ldp x29, x30, [sp, #64]
+	add sp, sp, #80
 	ret
-	.text
 	.global math
+	.p2align 2
 math:
-	pushq %rbp
-	movq %rsp, %rbp
-	subq $32, %rsp
-	movq wl_int_a(%rip),%rdi
-	movq wl_int_b(%rip),%rsi
-	movq %rdi, %rdx
-	addq %rdx, %rdx
-	movq %rdx,%rsi
-	movq wl_str_adtest(%rip),%rdi
-	call printf
-	movq wl_int_a(%rip),%rdi
-	movq wl_int_b(%rip),%rsi
-	movq %rdi, %rdx
-	subq %rdx, %rdx
-	movq %rdx,%rsi
-	movq wl_str_sutest(%rip),%rdi
-	call printf
-	movq wl_int_a(%rip),%rdi
-	movq wl_int_b(%rip),%rsi
-	movq %rdi, %rdx
-	imulq %rdx, %rdx
-	movq %rdx,%rsi
-	movq wl_str_mutest(%rip),%rdi
-	call printf
-	movq wl_int_a(%rip),%rdi
-	movq wl_int_b(%rip),%rsi
-	movq %rdi, %rax
-	cqto
-	idivq %rsi
-	movq %rax, %rdx
-	movq %rdx,%rsi
-	movq wl_str_ditest(%rip),%rdi
-	call printf
-	movq wl_int_a(%rip),%rdi
-	movq wl_int_b(%rip),%rsi
-	movq %rdi, %rax
-	cqto
-	idivq %rsi
-	movq %rdx, %rdx
-	movq %rdx,%rsi
-	movq wl_str_motest(%rip),%rdi
-	call printf
-	addq $32, %rsp
-	popq %rbp
+	sub sp, sp, #80
+	stp x29, x30, [sp, #64]
+	add x29, sp, #64
+	adrp x0,wl_int_a@PAGE
+	ldr w0, [x0, wl_int_a@PAGEOFF]
+	adrp x1,wl_int_b@PAGE
+	ldr w1, [x1, wl_int_b@PAGEOFF]
+	add x2, x0, x1
+	mov x1, x2
+	adrp x0,wl_str_adtest@PAGE
+	add x0, x0, wl_str_adtest@PAGEOFF
+	str x1, [sp, #0]
+	str x2, [sp, #8]
+	str x3, [sp, #16]
+	str x4, [sp, #24]
+	str x5, [sp, #32]
+	str x6, [sp, #40]
+	bl _printf
+	adrp x0,wl_int_a@PAGE
+	ldr w0, [x0, wl_int_a@PAGEOFF]
+	adrp x1,wl_int_b@PAGE
+	ldr w1, [x1, wl_int_b@PAGEOFF]
+	subs x2, x0, x1
+	mov x1, x2
+	adrp x0,wl_str_sutest@PAGE
+	add x0, x0, wl_str_sutest@PAGEOFF
+	str x1, [sp, #0]
+	str x2, [sp, #8]
+	str x3, [sp, #16]
+	str x4, [sp, #24]
+	str x5, [sp, #32]
+	str x6, [sp, #40]
+	bl _printf
+	adrp x0,wl_int_a@PAGE
+	ldr w0, [x0, wl_int_a@PAGEOFF]
+	adrp x1,wl_int_b@PAGE
+	ldr w1, [x1, wl_int_b@PAGEOFF]
+	mul x2, x0, x1
+	mov x1, x2
+	adrp x0,wl_str_mutest@PAGE
+	add x0, x0, wl_str_mutest@PAGEOFF
+	str x1, [sp, #0]
+	str x2, [sp, #8]
+	str x3, [sp, #16]
+	str x4, [sp, #24]
+	str x5, [sp, #32]
+	str x6, [sp, #40]
+	bl _printf
+	adrp x0,wl_int_a@PAGE
+	ldr w0, [x0, wl_int_a@PAGEOFF]
+	adrp x1,wl_int_b@PAGE
+	ldr w1, [x1, wl_int_b@PAGEOFF]
+	sdiv x2, x0, x1
+	mov x1, x2
+	adrp x0,wl_str_ditest@PAGE
+	add x0, x0, wl_str_ditest@PAGEOFF
+	str x1, [sp, #0]
+	str x2, [sp, #8]
+	str x3, [sp, #16]
+	str x4, [sp, #24]
+	str x5, [sp, #32]
+	str x6, [sp, #40]
+	bl _printf
+	adrp x0,wl_int_a@PAGE
+	ldr w0, [x0, wl_int_a@PAGEOFF]
+	adrp x1,wl_int_b@PAGE
+	ldr w1, [x1, wl_int_b@PAGEOFF]
+	sdiv x2, x0, x1
+	mul x2, x2, x2
+	sub x2, x1, x2
+	mov x1, x2
+	adrp x0,wl_str_motest@PAGE
+	add x0, x0, wl_str_motest@PAGEOFF
+	str x1, [sp, #0]
+	str x2, [sp, #8]
+	str x3, [sp, #16]
+	str x4, [sp, #24]
+	str x5, [sp, #32]
+	str x6, [sp, #40]
+	bl _printf
+	ldp x29, x30, [sp, #64]
+	add sp, sp, #80
 	ret
-	.text
-	.global main
-main:
-	pushq %rbp
-	movq %rsp, %rbp
-	subq $32, %rsp
-	movq wl_str_hello(%rip),%rdi
-	call printf
-	call logic
-	call math
-	movq %rdi, %rax
-	addq $32, %rsp
-	popq %rbp
+	.global _main
+	.p2align 2
+_main:
+	sub sp, sp, #80
+	stp x29, x30, [sp, #64]
+	add x29, sp, #64
+	adrp x0,wl_str_hello@PAGE
+	add x0, x0, wl_str_hello@PAGEOFF
+	str x1, [sp, #0]
+	str x2, [sp, #8]
+	str x3, [sp, #16]
+	str x4, [sp, #24]
+	str x5, [sp, #32]
+	str x6, [sp, #40]
+	bl _printf
+	bl logic
+	bl math
+	mov x0, #0
+	ldp x29, x30, [sp, #64]
+	add sp, sp, #80
 	ret
-	.text
-	.global wl_str_hello
-.rawwl_strhello:
-	.asciz "- - - Bitwise/Arithmetic logic test - - -\n"
-	.data
-	.align 8
 wl_str_hello:
-	.quad .rawwl_strhello
+	.asciz "- - - Bitwise/Arithmetic logic test - - -\n"
 
 	.global wl_int_a
 	.p2align 2,0x0
@@ -129,91 +216,25 @@ wl_int_a:
 	.p2align 2,0x0
 wl_int_b:
 	.long 0x1
-	.text
-	.global wl_str_ntest
-.rawwl_strntest:
-	.asciz "NOT::  Should be: -2.  Is: %d\n"
-	.data
-	.align 8
 wl_str_ntest:
-	.quad .rawwl_strntest
-	.text
-	.global wl_str_atest
-.rawwl_stratest:
-	.asciz "AND::  Should be:  1.  Is: %d\n"
-	.data
-	.align 8
+	.asciz "NOT::  Should be: -2.  Is: %d\n"
 wl_str_atest:
-	.quad .rawwl_stratest
-	.text
-	.global wl_str_otest
-.rawwl_strotest:
-	.asciz "OR::   Should be:  1.  Is: %d\n"
-	.data
-	.align 8
+	.asciz "AND::  Should be:  1.  Is: %d\n"
 wl_str_otest:
-	.quad .rawwl_strotest
-	.text
-	.global wl_str_notest
-.rawwl_strnotest:
-	.asciz "NOR::  Should be: -2.  Is: %d\n"
-	.data
-	.align 8
+	.asciz "OR::   Should be:  1.  Is: %d\n"
 wl_str_notest:
-	.quad .rawwl_strnotest
-	.text
-	.global wl_str_natest
-.rawwl_strnatest:
-	.asciz "NAND:: Should be: -2.  Is: %d\n"
-	.data
-	.align 8
+	.asciz "NOR::  Should be: -2.  Is: %d\n"
 wl_str_natest:
-	.quad .rawwl_strnatest
-	.text
-	.global wl_str_xtest
-.rawwl_strxtest:
-	.asciz "XOR::  Should be:  0.  Is: %d\n"
-	.data
-	.align 8
+	.asciz "NAND:: Should be: -2.  Is: %d\n"
 wl_str_xtest:
-	.quad .rawwl_strxtest
-	.text
-	.global wl_str_adtest
-.rawwl_stradtest:
-	.asciz "ADD::  Should be:  2.  Is: %d\n"
-	.data
-	.align 8
+	.asciz "XOR::  Should be:  0.  Is: %d\n"
 wl_str_adtest:
-	.quad .rawwl_stradtest
-	.text
-	.global wl_str_sutest
-.rawwl_strsutest:
-	.asciz "SUB::  Should be:  0.  Is: %d\n"
-	.data
-	.align 8
+	.asciz "ADD::  Should be:  2.  Is: %d\n"
 wl_str_sutest:
-	.quad .rawwl_strsutest
-	.text
-	.global wl_str_mutest
-.rawwl_strmutest:
-	.asciz "MUL::  Should be:  1.  Is: %d\n"
-	.data
-	.align 8
+	.asciz "SUB::  Should be:  0.  Is: %d\n"
 wl_str_mutest:
-	.quad .rawwl_strmutest
-	.text
-	.global wl_str_ditest
-.rawwl_strditest:
-	.asciz "DIV::  Should be:  1.  Is: %d\n"
-	.data
-	.align 8
+	.asciz "MUL::  Should be:  1.  Is: %d\n"
 wl_str_ditest:
-	.quad .rawwl_strditest
-	.text
-	.global wl_str_motest
-.rawwl_strmotest:
-	.asciz "MOD::  Should be:  0.  Is: %d\n"
-	.data
-	.align 8
+	.asciz "DIV::  Should be:  1.  Is: %d\n"
 wl_str_motest:
-	.quad .rawwl_strmotest
+	.asciz "MOD::  Should be:  0.  Is: %d\n"

@@ -1,30 +1,38 @@
 ~include "concord.well"
 
 ~constants {
-	~string:BOT_TOKEN = "TOKEN"
-	~string:test = "DO NOT REDEEM!\n"
+	~string:json = "./config.json"
 }
 
-~void:on_ready {
-
+~void:_on_ready {
+	~string:ready = "I READY!"
+	move~ ready, r1
+	call~ printf
 }
 
-~void:on_message {
-
+~void:_on_message {
+	
 }
 
 ~int:main {
-	
-	move~ BOT_TOKEN, r1
-	call~ discord_init
-	sstruct~ r1
-	
-	lstruct~ r1
+	~string:client = "" 
+	move~ json, r1
+	call~ discord_config_init
+	move~ r1, client
+
+	move~ client, r1
 	move~ DISCORD_GATEWAY_MESSAGE_CONTENT, r2
 	call~ discord_add_intents
 
-	move~ test, r1
-	call~ printf
+	move~ client, r1
+	move~ on_ready, r2
+	call~ discord_set_on_ready
+	move~ client, r1
+	move~ on_message, r2
+	call~ discord_set_on_message_create
+
+	move~ client, r1
+	call~ discord_run
 
 	return~ 0
 }

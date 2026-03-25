@@ -1,4 +1,5 @@
-/*Copyright (c) 2022-2025 MinervaWare LLC*/
+/*Copyright (c) 2024-2026 MinervaWare LLC*/
+/*Copyright (c) 2022-2024 Tristan Wellman*/
 
 #ifndef ASMOUT_H
 #define ASMOUT_H

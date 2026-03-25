@@ -1,78 +1,85 @@
-	.text
+	.extern printf
 	.global shiftBasic
+	.p2align 2
 shiftBasic:
-	pushq %rbp
-	movq %rsp, %rbp
-	subq $32, %rsp
-	movq wl_int_i(%rip),%rdi
-	movq %rdi, %rcx
-	addq %rcx, %rcx
-	movq %rcx, %rax
-	addq $32, %rsp
-	popq %rbp
+	sub sp, sp, #80
+	stp x29, x30, [sp, #64]
+	add x29, sp, #64
+	adrp x0,wl_int_i@PAGE
+	ldr w0, [x0, wl_int_i@PAGEOFF]
+	add x3, x0, x0
+	mov x0, x3
+	ldp x29, x30, [sp, #64]
+	add sp, sp, #80
 	ret
-	.text
 	.global shiftWell
+	.p2align 2
 shiftWell:
-	pushq %rbp
-	movq %rsp, %rbp
-	subq $32, %rsp
-	movq wl_int_i(%rip),%rcx
-	movq %rcx, %rax
-	addq $32, %rsp
-	popq %rbp
+	sub sp, sp, #80
+	stp x29, x30, [sp, #64]
+	add x29, sp, #64
+	adrp x3,wl_int_i@PAGE
+	ldr w3, [x3, wl_int_i@PAGEOFF]
+	mov x0, x3
+	ldp x29, x30, [sp, #64]
+	add sp, sp, #80
 	ret
-	.text
 	.global printIStatus
+	.p2align 2
 printIStatus:
-	pushq %rbp
-	movq %rsp, %rbp
-	subq $32, %rsp
-	movq %rax,%rdx
-	movq wl_str_a0(%rip),%rdi
-	movq wl_int_i(%rip),%rsi
-	call printf
-	addq $32, %rsp
-	popq %rbp
+	sub sp, sp, #80
+	stp x29, x30, [sp, #64]
+	add x29, sp, #64
+	mov x2, x6
+	adrp x0,wl_str_a0@PAGE
+	add x0, x0, wl_str_a0@PAGEOFF
+	adrp x1,wl_int_i@PAGE
+	ldr w1, [x1, wl_int_i@PAGEOFF]
+	str x1, [sp, #0]
+	str x2, [sp, #8]
+	str x3, [sp, #16]
+	str x4, [sp, #24]
+	str x5, [sp, #32]
+	str x6, [sp, #40]
+	bl _printf
+	ldp x29, x30, [sp, #64]
+	add sp, sp, #80
 	ret
-	.text
-	.global main
-main:
-	pushq %rbp
-	movq %rsp, %rbp
-	subq $32, %rsp
-	movq wl_str_welcome(%rip),%rdi
-	call printf
-	movq wl_int_i(%rip),%rax
-	call printIStatus
-	call shiftBasic
-	call printIStatus
-	movq wl_int_i(%rip),%rax
-	call printIStatus
-	call shiftWell
-	call printIStatus
-	movq %rdi, %rax
-	addq $32, %rsp
-	popq %rbp
+	.global _main
+	.p2align 2
+_main:
+	sub sp, sp, #80
+	stp x29, x30, [sp, #64]
+	add x29, sp, #64
+	adrp x0,wl_str_welcome@PAGE
+	add x0, x0, wl_str_welcome@PAGEOFF
+	str x1, [sp, #0]
+	str x2, [sp, #8]
+	str x3, [sp, #16]
+	str x4, [sp, #24]
+	str x5, [sp, #32]
+	str x6, [sp, #40]
+	bl _printf
+	adrp x6,wl_int_i@PAGE
+	ldr w6, [x6, wl_int_i@PAGEOFF]
+	bl printIStatus
+	bl shiftBasic
+	bl printIStatus
+	adrp x6,wl_int_i@PAGE
+	ldr w6, [x6, wl_int_i@PAGEOFF]
+	bl printIStatus
+	bl shiftWell
+	bl printIStatus
+	mov x0, x0
+	ldp x29, x30, [sp, #64]
+	add sp, sp, #80
 	ret
-	.text
-	.global wl_str_welcome
-.rawwl_strwelcome:
-	.asciz "- - - Bit shifting tests - -\n";
-	.data
-	.align 8
 wl_str_welcome:
-	.quad .rawwl_strwelcome
+	.asciz "- - - Bit shifting tests - -\n";
 
 	.global wl_int_i
 	.p2align 2,0x0
 wl_int_i:
 	.long 0xa
-	.text
-	.global wl_str_a0
-.rawwl_stra0:
-	.asciz "%d : %b\n"
-	.data
-	.align 8
 wl_str_a0:
-	.quad .rawwl_stra0
+	.asciz "%d : %b\n"
