@@ -63,10 +63,7 @@ typedef struct {
 	struct asmBuffers buffers;
 	
 	struct parserData *parser;
-	
-	/*malloc to total function length in parser*/
 	Function *functions;
-
 } AsmOut;
 
 int checkRegister(char *reg);

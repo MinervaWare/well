@@ -62,7 +62,7 @@ void AMD_X86_64GetLVAlloc(char *buf, size_t bSize, Variable *var) {
 							  vName, offset);
 						break;
 			case VOID: break;
-			case ZERO: break;
+			case PTR: break;
 		};
 	} else if(CPU==I386) {
 		switch(var->type) {
@@ -83,7 +83,7 @@ void AMD_X86_64GetLVAlloc(char *buf, size_t bSize, Variable *var) {
 							  vName, offset);
 						break;
 			case VOID: break;
-			case ZERO: break;
+			case PTR: break;
 		};
 	}
 }
@@ -154,7 +154,7 @@ char *getCurrentVar(struct parserData *parser, Instruction *ins, int argSpot) {
 			case FLOAT: snprintf(asmVName, sizeof(asmVName),
 								"wl_fl_%s", ins->arguments[argSpot]);break;
 			case VOID: /*TODO*/break;
-			case ZERO: snprintf(asmVName, sizeof(asmVName), 
+			case PTR: snprintf(asmVName, sizeof(asmVName), 
 							   "wl_z_%s", ins->arguments[argSpot]);break;
 		};
 		if(CPU==AMD_X86_64) strcat(asmVName, "(%rip)");

@@ -18,6 +18,7 @@ void initArgParseArgs(wData *data, int argc, char *argv[]);
 void compileFile(wData *data); 
 
 int main(int argc, char **argv) {
+	WINITDEFAULTALLOCATOR;
 
 	clock_t start, end;
 	struct parserData *p;
@@ -84,45 +85,43 @@ int argCheckOption(struct ArgparseParser *parser,
 
 #define HELPMLEN 1024
 void outputCPUHelp() {
-	char *cpuHelp = calloc(HELPMLEN, sizeof(char));
-	snprintf(cpuHelp, sizeof(char)*HELPMLEN,
-		"WELLANG CPU OPTIONS:\n\n"
-		"Architectures with \"(TODO)\" are not yet implemented with Wellang.\n"
-		"Usage Example: well foo.well --arch AMD_X86_64\n"
-		"AMD_X86_64   | Intel/AMD x86_64 architecture\n%s",
-		"I386         | 32-bit Intel/AMD x86 architecture\n"
-		"ARMv8        | aarch64 architecture\n"
-		"ARM_MAC      | Outputs the same as ARMv8\n"
-		"ARMv7  (TODO)| 32-bit aarch architecture\n"
-		"POWERPC(TODO)| 32-bit and 64-bit ppc architecture\n%s"
-		"RS6000 (TODO)| IBM POWER architecture\n"
-		"ALPHA        | Alpha architecture\n"
-		"SZ_IBM (TODO)| IBM s370/390 architecture\n"
-		"SPARC  (TODO)| Sun Sparc architecture\n"
-		"MIPS   (TODO)| Mips architecture\n"
-		"HPPA   (TODO)| HP Precision Architecture\n");
-	WLOG(INFO, cpuHelp);
-	free(cpuHelp);
+	wString cpuHelp = wInitString(HELPMLEN);
+	wAssign(&cpuHelp, "WELLANG CPU OPTIONS:\n");
+	wCAppendLine(&cpuHelp, "Architectures with \"(TODO)\" are not yet implemented with Wellang.");
+	wCAppendLine(&cpuHelp, "Usage Example: well foo.well --arch AMD_X86_64");
+	wCAppendLine(&cpuHelp, "AMD_X86_64   | Intel/AMD x86_64 architecture");
+	wCAppendLine(&cpuHelp, "I386         | 32-bit Intel/AMD x86 architecture");
+	wCAppendLine(&cpuHelp, "ARM_MAC      | Armv8 Mach & Elf");
+	wCAppendLine(&cpuHelp, "ARMv7  (TODO)| 32-bit aarch architecture");
+	wCAppendLine(&cpuHelp, "POWERPC      | 32-bit and 64-bit ppc architecture");
+	wCAppendLine(&cpuHelp, "RS6000 (TODO)| IBM POWER architecture");
+	wCAppendLine(&cpuHelp, "ALPHA        | DEC Alpha architecture");
+	wCAppendLine(&cpuHelp, "SZ_IBM (TODO)| IBM s370/390 architecture");
+	wCAppendLine(&cpuHelp, "SPARC  (TODO)| Sun Sparc architecture");
+	wCAppendLine(&cpuHelp, "MIPS   (TODO)| Mips architecture");
+	wCAppendLine(&cpuHelp, "HPPA   (TODO)| HP Precision Architecture");
+	WLOG(INFO, wToCString(cpuHelp));
+	wRemove(&cpuHelp);	
 	exit(0);
 }
 
 void runArgParsing(wData *data) {
-	char *help = calloc(HELPMLEN, sizeof(char)); 
-	snprintf(help, sizeof(char)*HELPMLEN,
-			"WELLANG CLI HELP:\n\n"
-			"--help      | -h: Need help? Use -h\n"
-			"--output    | -o: Set name of executable output\n"
-			"--cobject   | -c: Compiler to object(.o) file.\n%s",
-			"--cflags    | -cf: Set your cflags (ex: well main.well -cc '-g -lpthread')\n"
-			"--assembly  | -a: Keep the assembly output file\n"
-			"--info      | -i: Shows extra debug information at compile time\n\n"
-			"--use-gnuld | -use-ld: Use gnu linker rather than gcc\n%s",
-			"--ldflags   | -ldflags: Set your gnu linker flags (ex: wesm main.well -use-ld -ldflags '-T link.ld')\n"
-			"--arch      | -arch: Set the output architecture, this requires your toolchain to support cross-compilation");
+	wString help = wInitString(HELPMLEN);
+	wAssign(&help, "WELLANG CLI HELP:\n");
+	wCAppendLine(&help, "--help      | -h: Need help? Use -h");
+	wCAppendLine(&help, "--output    | -o: Set name of executable output");
+	wCAppendLine(&help, "--cobject   | -c: Compiler to object(.o) file.");
+	wCAppendLine(&help, "--cflags    | -cf: Set your cflags (ex: well main.well -cc '-g -lpthread')");
+	wCAppendLine(&help, "--assembly  | -a: Keep the assembly output file");
+	wCAppendLine(&help, "--info      | -i: Shows extra debug information at compile time\n");
+	wCAppendLine(&help, "--use-gnuld | -use-ld: Use gnu linker rather than gcc");
+	wCAppendLine(&help, "-ldflags   | -ldflags: Set your gnu linker flags (ex: wesm main.well -use-ld -ldflags '-T link.ld')");
+	wCAppendLine(&help, "--arch      | -arch: Set the output architecture, this requires your toolchain to support cross-compilation");
+
 
 	if(argCheckOption(&data->argParser, "--help", "-h")) {
-		WLOG(INFO, help);
-		free(help);
+		WLOG(INFO, help.data);
+		wRemove(&help);
 		exit(0);
 	}
 
@@ -173,7 +172,7 @@ void runArgParsing(wData *data) {
 			}
 		}	
 	}
-	free(help);
+	wRemove(&help);
 }
 
 void initArgParseArgs(wData *data, int argc, char **argv) {
@@ -288,7 +287,7 @@ void compileFile(wData *data) {
 		waitpid(pid, &status, 0);
 
 		for(i=0;i<data->includeSize;i++) {
-			args[1] = calloc(strlen(data->includedFiles[i])+1, sizeof(char *));
+args[1] = calloc(strlen(data->includedFiles[i])+1, sizeof(char *));
             strcpy(args[1], data->includedFiles[i]);
 			if(data->USEINFO) {
 				char *buf = calloc(256, sizeof(char));

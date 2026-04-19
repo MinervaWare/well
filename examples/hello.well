@@ -1,10 +1,12 @@
+; Welcome to Wellang! 
+; This is a simple "hello world" program, it will run on any CPU architecture.
+
 ~constants {
-	~string:hello = "Hello World!\n"
+	~string:hello = "Yo Angelo!\n"
 }
 
 ~int:main {
 	move~ hello, r1
 	call~ printf
 	return~ 0
-
 }

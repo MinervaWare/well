@@ -3,15 +3,10 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <carray.h>
+#include <chash.h>
 #include "util.h"
 #include "wdata.h"
 #include "werror.h"
-
-#define STRING_ARRAY_TYPE                   char*
-#define STRING_ARRAY_HEAP                   1
-#define STRING_ARRAY_FREE(value)            NULL
-#define STRING_ARRAY_COMPARE(cmp_a, cmp_b)  (strcmp(cmp_a, cmp_b) == 0)
 
 struct StringArray {
     int length;
@@ -37,7 +32,7 @@ enum varTypes {
 	STRING,
 	FLOAT,
 	VOID,
-	ZERO,
+	PTR, /*This can be any random memory location to any type*/
 	ANY /*variadic arguments*/
 };
 

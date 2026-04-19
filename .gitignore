@@ -6,3 +6,5 @@ well
 .idea
 Wellang_User_Manual.docx
 tests/libs/concord/config.json
+./modules
+./tests/modules

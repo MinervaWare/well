@@ -493,10 +493,10 @@ char *getAsmFloat(char *name, char *value) {
 	return ret;
 }
 
-char *getAsmZero(char *name, char *value) {
+char *getAsmPtr(char *name, char *value) {
 	int len = strlen(name)+strlen(value)+128;
 	char *ret = calloc(len, sizeof(char));
-	snprintf(ret, sizeof(char)*len, "\n.zerofill __DATA,__bss,wl_z_%s,%s,3", name, value);
+	snprintf(ret, sizeof(char)*len, "wl_z_%s:\n\t.zero 8\n", name);
 	return ret;
 }
 
@@ -517,7 +517,7 @@ void convertVariables(AsmOut *out) {
 			case STRING: asmVar = getAsmString(curName, curValue);break;
 			case CHAR: asmVar = getAsmChar(curName, curValue);break;
 			case VOID: /*TODO*/break;
-			case ZERO: asmVar = getAsmZero(curName, curValue);
+			case PTR: asmVar = getAsmPtr(curName, curValue);
 		};
 		if(asmVar!=NULL) {
 			totalSize += strlen(asmVar);
@@ -608,7 +608,9 @@ void convertToAsm(AsmOut *out) {
 	convertVariables(out);
 
 	completeBuffer(out);
-	fprintf(out->asmOut, "%s", out->buffers.output.asmOutBuffer);
+	if(out->buffers.output.asmOutBuffer&&out->asmOut) {
+		fprintf(out->asmOut, "%s", out->buffers.output.asmOutBuffer);
+	}
 	free(out->buffers.output.asmOutBuffer);
 	free(out->buffers.externals);
 	free(out->buffers.functions);
@@ -636,7 +638,9 @@ void initAsmOut(struct parserData *parser, AsmOut *output) {
 	output->functions = calloc(parser->totalFunctions, sizeof(Function));
 	CPU = parser->fData->cpu;
 
-	fileName = strtok(parser->fData->fileName, ".");
+	fileName = stripFilenameFromPath(parser->fData->fileName);
+	if(!fileName) fileName = parser->fData->fileName;
+	fileName = strtok(fileName, ".");
 	strcat(fileName, ".s");
 
 	output->asmOut = fopen(fileName, "r");
@@ -650,6 +654,7 @@ void initAsmOut(struct parserData *parser, AsmOut *output) {
 	
 	/*reopen with write mode/create file*/
 	output->asmOut = fopen(fileName, "wr");
+	WASSERT(output->asmOut!=NULL, "Failed to open file!");
 
 	output->buffers.output.AOBSize = 0;
 

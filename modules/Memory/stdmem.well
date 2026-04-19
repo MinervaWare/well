@@ -1,0 +1,59 @@
+; Copyright (c) 2022-2026 MinervaWare LLC
+; Allocation handlers
+;
+; For now this will also just call C standard functions until I take the time
+; to do a bump allocator or something.
+#NOMAIN
+
+~constants {
+	~int:ALLOC = 0
+	~int:RESIZE = 1
+	~int:FREE = 2
+}
+
+~ptr:allocatorProc {
+	~int:size = 0
+	~int:mode = 0
+	~ptr:oldMem = 0
+	~ptr:res = 0
+	move~ r1, size
+	move~ r2, mode
+	move~ r3, oldMem
+	move~ ALLOC, r4
+	~if(mode == r4) {
+		move~ size, r1
+		call~ malloc
+		return~ r7
+	}
+	move~ RESIZE, r4
+	~if(mode == r4) {
+		move~ oldMem, r1
+		move~ size, r2
+		call~ realloc
+		return~ r7
+	}
+	move~ FREE, r4
+	~if(mode == r4) {
+		move~ oldMem, r1
+		call~ free
+		return~ res
+	}
+	return~ res
+}
+
+~ptr:alloc {
+	move~ ALLOC, r2
+	call~ allocatorProc
+	return~ r7
+}
+
+~ptr:resize {
+	move~ RESIZE, r2
+	call~ allocatorProc
+	return~ r7
+}
+
+~void:free {
+	move~ FREE, r2
+	call~ free
+}

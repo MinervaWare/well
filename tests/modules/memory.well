@@ -1,0 +1,18 @@
+~include "../../modules/Memory/stdmem.well"
+
+~int:main {
+	~int:size = 128
+	~ptr:randomData = ""
+	move~ size, r1
+	call~ alloc
+	move~ r7, randomData
+
+	add~ size, size, 128
+	move~ randomData, r1
+	move~ size, r2
+	call~ resize
+
+	move~ randomData, r1
+	call~ free
+	return~ 0	
+}

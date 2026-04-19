@@ -84,7 +84,22 @@ void ARM_MACGetLVAlloc(char *buf, int bSize, Variable *var) {
 		}
 		case FLOAT: break;
 		case VOID: break;
-		case ZERO: break;
+		case PTR: {
+					if(CPU!=ARM_MAC) {
+						snprintf(buf, bSize,
+								"\tadrp x15, wl_z_%s\n"
+								"\tadd x15, x15, :lo12:wl_z_%s\n"
+								"\tstr x15, [sp, %d]\n",
+								vName, vName, offset+RESERVEDARGOFFSET);
+					} else {
+						snprintf(buf, bSize,
+								"\tadrp x15, wl_z_%s@PAGE\n"
+								"\tadd x15, x15, wl_z_%s@PAGEOFF\n"
+								"\tstr x15, [sp, %d]\n",
+								vName, vName, offset+RESERVEDARGOFFSET);
+					}
+					break;
+		}
 	};
 }
 
@@ -158,7 +173,7 @@ char *ARM_MACgetCurrentVar(struct parserData *parser, Instruction *ins, int argS
 			case FLOAT: snprintf(asmVName, sizeof(asmVName),
 								"wl_fl_%s", ins->arguments[argSpot]);break;
 			case VOID: /*TODO*/break;
-			case ZERO: snprintf(asmVName, sizeof(asmVName), 
+			case PTR: snprintf(asmVName, sizeof(asmVName), 
 							   "wl_z_%s", ins->arguments[argSpot]);break;
 		};
 	} else {
@@ -198,12 +213,12 @@ char *ARM_MACgetMoveInstructions(struct parserData *parser, Instruction *ins,
 								  val2, getTargetValVariationARM_MAC(val1, 1), 
 								  val2+1, val2, getTargetValVariationARM_MAC(val1, 2));
 						   break;
+				case PTR:
 				case STRING: snprintf(outBuf, sizeof(outBuf), 
 								  "\tadrp %s,%s\n\tadd %s, %s, %s\n",
 								  val2, getTargetValVariationARM_MAC(val1, 1), 
 								  val2, val2, getTargetValVariationARM_MAC(val1, 2));
 							 break;
-
 				case FLOAT: snprintf(outBuf, sizeof(outBuf), 
 								  "\tadrp %s,%s\n\tldr s%s, [%s, %s]\n",
 								  val2, getTargetValVariationARM_MAC(val1, 1), 

@@ -21,6 +21,7 @@ Variable *getVarFrom(struct parserData *parser, char *name);
 Variable *queryLocalVariable(struct parserData *parser, 
 		int lineNum, char *var);
 char *querySubFuncScopeName(Function *func, int lineNum);
+int getLineNumFromStr(char *line);
 
 /*
  * Checks if line contains important type:
@@ -80,6 +81,14 @@ char *getWT(enum wTypes t) {
 		case EXTERN: return "EXTERN";
 	}
 	return "";
+}
+
+int getLineNumFromStr(char *line) {
+	int i;
+	for(i=0;i<gPData->bufferSize;i++) {
+		if(!strcmp(line, gPData->fileBuffer[i])) return i;
+	}
+	return -1;
 }
 
 char *getScopeName(char *line) {
@@ -183,8 +192,8 @@ void setVariableType(Variable *var, char *type,
 		var->type = FLOAT; return;
 	} else if(!strcmp(type, "void")) {
 		var->type = VOID; return;
-	} else if(!strcmp(type, "zero")) {
-		var->type = ZERO; return;
+	} else if(!strcmp(type, "ptr")) {
+		var->type = PTR; return;
 	}
 	WLOG_WERROR(WERROR_UNDEFINED_TYPE,
 			file, lineNum, "constants", "");
@@ -196,7 +205,7 @@ enum varTypes varStrToEnum(char *type) {
 	else if(!strcmp(type, "int")) return INT;
 	else if(!strcmp(type, "float")) return FLOAT;
 	else if(!strcmp(type, "void")) return VOID;
-	else if(!strcmp(type, "zero")) return ZERO;
+	else if(!strcmp(type, "ptr")) return PTR;
 	else if(!strcmp(type, "Any")) return ANY;
 	return INT;
 }
@@ -251,7 +260,7 @@ void getVariables(struct parserData *parser) {
 				setVariableType(&parser->variables[j], type,
 						parser->scopes[i].lineNum, parser->fData->fileName);
 
-				if(parser->variables[j].type!=ZERO) {
+				if(parser->variables[j].type!=PTR) {
 					char *name = strstr(tmp, ":");
 					name++;	
 					name = strtok(name, "=");
@@ -351,10 +360,10 @@ int LVTGetOffsetSize(enum varTypes type) {
 	switch(type) {
 		case INT: return sizeof(int64_t);
 		case CHAR: return sizeof(char);
-		case STRING: return sizeof(char *) /*8*/;
+		case STRING: return sizeof(char *) /*same as PTR*/;
 		case FLOAT: return sizeof(float);
 		case VOID: return 4;
-		case ZERO: return 4;
+		case PTR: return 8;
 	};	
 	return 0;
 }
@@ -656,11 +665,11 @@ void startFunctionSubScope(Function *func, char *data, int lineNum) {
 	func->subScopes[func->totalScopes].scope.scopeType = getScopeType(data);
 	func->subScopes[func->totalScopes].scope.lineNum = lineNum;
 	switch(func->subScopes[func->totalScopes].scope.scopeType) {
-		case IFSTATE: snprintf(buf, sizeof(buf), "wl_%s_is_%d", 
-							  func->funName, func->totalScopes); 
+		case IFSTATE: snprintf(buf, sizeof(buf), "wl_%s_is_%d%d", 
+							  func->funName, func->totalScopes, lineNum); 
 					  break;
-		case LOOP: snprintf(buf, sizeof(buf), "wl_%s_lop_%d", 
-						   func->funName, func->totalScopes);
+		case LOOP: snprintf(buf, sizeof(buf), "wl_%s_lop_%d%d", 
+						   func->funName, func->totalScopes, lineNum);
 				   break;
 		default: break;
 	};
@@ -751,13 +760,12 @@ void parseFunctionInstructions(Function *func) {
 		func->instructions[j].instruction = NULL;
 		func->instructions[j].arguments = NULL;
 		func->instructions[j].errData.lineNum = func->scope.lineNum+i+1; /*+1 since we skip header*/
-		func->instructions[j].lineNum = func->scope.lineNum+i+1;
+		func->instructions[j].lineNum = getLineNumFromStr(func->instructions[j].line);
 		func->instructions[j].errData.function = calloc(strlen(func->funName)+1, 
 				sizeof(char));
 		strcpy(func->instructions[j].errData.function, func->funName);
 		parseFunc(func, cpy, &func->instructions[j]);
 		free(cpy);cpy=NULL;
-		func->instructions[j].lineNum = func->scope.lineNum+i;
 		j++;
 	}
 	/*Parse subscope instructions*/
@@ -769,7 +777,7 @@ void parseFunctionInstructions(Function *func) {
 			if(checkImportantType(scope->data[j])) continue; /*TODO add the recursive sub sub scopes*/
 			cpy = calloc(strlen(scope->data[j])+1, sizeof(char));
 			strcpy(cpy, scope->data[j]);
-			scope->instructions[k].lineNum = scope->scope.lineNum+k;
+			scope->instructions[k].lineNum = getLineNumFromStr(scope->data[j]);
 			scope->instructions[k].line = calloc(strlen(scope->data[j])+1,
 					sizeof(char));
 			strcpy(scope->instructions[k].line, scope->data[j]);
@@ -783,6 +791,7 @@ void parseFunctionInstructions(Function *func) {
 			free(cpy);cpy=NULL;
 			k++;
 		}
+		k = 0;
 	}
 }
 
@@ -987,6 +996,7 @@ void getExternals(struct parserData *parser) {
  * Inclusion handling
  * */
 
+/*@TODO What the fuck was I on when I made this?*/
 void getIncludedFiles(struct parserData *parser) {
 	static int defaultArrSize = 100;
 	int i;
@@ -1042,18 +1052,23 @@ void getIncludedFiles(struct parserData *parser) {
 					data = calloc(1, sizeof(wData));
 					data->main = fopen(included, "r");
 					data->fileName = calloc(strlen(included)+1, sizeof(char));
+					data->cpu = CPU;
 					strcpy(data->fileName, included);
+
 					erbuf = calloc(256, sizeof(char));
 					snprintf(erbuf, sizeof(char)*256, 
 							"FATAL:: Failed to open file: %s", included);
 					WASSERT(data->main!=NULL, erbuf);
 					free(erbuf);
+
 					p = calloc(1, sizeof(struct parserData));
 					p = initParser(data);
 					parseProgram(p);
+
 					output = calloc(1, sizeof(AsmOut));
 					initAsmOut(p, output);
 					convertToAsm(output);
+
 					freeAsm(output);
 					free(data);data=NULL;
 					free(p);p=NULL;
