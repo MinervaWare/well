@@ -10,15 +10,13 @@ char *stackAllocateAMD_X86_64(enum cpuType cpu) {
 	CPU = cpu;
 	/*auto to 16*/
 	if(CPU==AMD_X86_64) {
-		char *ret = calloc(1024, sizeof(char));
-		snprintf(ret, 1024*sizeof(char),
-				"\tpushq %%rbp\n\tmovq %%rsp, %%rbp\n\tsubq $32, %%rsp\n");
-		return ret;
+		wString ret = wInitString(1024);
+		wAssign(&ret, "\tpushq %rbp\n\tmovq %rsp, %rbp\n\tsubq $32, %rsp\n");
+		return ret.data;
 	} else if(CPU==I386) {
-		char *ret = calloc(1024, sizeof(char));
-		snprintf(ret, 1024*sizeof(char),
-				"\tpushl %%ebp\n\tmovl %%esp, %%ebp\n\tsubl $32, %%esp\n");
-		return ret;
+		wString ret = wInitString(1024);
+		wAssign(&ret, "\tpushl %ebp\n\tmovl %esp, %ebp\n\tsubl $32, %esp\n");
+		return ret.data;
 	}
 	return NULL;
 }
@@ -26,13 +24,13 @@ char *stackAllocateAMD_X86_64(enum cpuType cpu) {
 char *stackDeallocateAMD_X86_64() {
 	/*auto to 16*/
 	if(CPU==AMD_X86_64) {
-		char *ret = calloc(1024, sizeof(char));
-		snprintf(ret, 1024*sizeof(char), "\taddq $32, %%rsp\n\tpopq %%rbp\n");
-		return ret;
+		wString ret = wInitString(1024);
+		wAssign(&ret, "\taddq $32, %rsp\n\tpopq %rbp\n");
+		return ret.data;
 	} else if(CPU==I386) {
-		char *ret = calloc(1024, sizeof(char));
-		snprintf(ret, 1024*sizeof(char), "\taddl $32, %%esp\n\tpopl %%ebp\n");
-		return ret;
+		wString ret = wInitString(1024);
+		wAssign(&ret, "\taddl $32, %esp\n\tpopl %ebp\n");
+		return ret.data;
 	}
 	return NULL;
 }
@@ -52,13 +50,13 @@ void AMD_X86_64GetLVAlloc(char *buf, size_t bSize, Variable *var) {
 							   (int)value[0], offset);
 					   break;
 			case STRING: snprintf(buf, bSize,
-								 "\tmovq wl_str_%s(%%rip), %%r10\n"
-								 "\tmovq %%r10, -%d(%%rbp)\n",
+								 "\tmovq wl_str_%s(%%rip), %r10\n"
+								 "\tmovq %r10, -%d(%%rbp)\n",
 								 vName, offset); 
 						break;
 			case FLOAT: snprintf(buf, bSize,
-							  "\tmovss wl_fl_%s(%%rip), %%xmm7\n"
-							  "\tmovss %%xmm7, -%d(%%rbp)\n",
+							  "\tmovss wl_fl_%s(%%rip), %xmm7\n"
+							  "\tmovss %xmm7, -%d(%%rbp)\n",
 							  vName, offset);
 						break;
 			case VOID: break;
@@ -138,45 +136,38 @@ char *mapRegisterAMD_X86_64(char *reg) {
 }
 
 char *getCurrentVar(struct parserData *parser, Instruction *ins, int argSpot) {
-	char *res = NULL;
+	wString res;
 	Variable *v = NULL;
-	char asmVName[1024];
 	if(parser==NULL||ins==NULL) return NULL;
 	v = getVarFrom(parser, ins->arguments[argSpot]);
 	if(v!=NULL) {
 		switch(v->type) {
-			case STRING: snprintf(asmVName, sizeof(asmVName),
-								 "wl_str_%s", ins->arguments[argSpot]);break;
-			case CHAR: snprintf(asmVName, sizeof(asmVName),
-							   "wl_ch_%s", ins->arguments[argSpot]);break;
-			case INT: snprintf(asmVName, sizeof(asmVName),
-							  "wl_int_%s", ins->arguments[argSpot]);break;
-			case FLOAT: snprintf(asmVName, sizeof(asmVName),
-								"wl_fl_%s", ins->arguments[argSpot]);break;
+			case STRING: res = wCFmt("wl_str_%s", ins->arguments[argSpot]);break;
+			case CHAR: res = wCFmt("wl_ch_%s", ins->arguments[argSpot]);break;
+			case INT: res = wCFmt("wl_int_%s", ins->arguments[argSpot]);break;
+			case FLOAT: res = wCFmt("wl_fl_%s", ins->arguments[argSpot]);break;
 			case VOID: /*TODO*/break;
-			case PTR: snprintf(asmVName, sizeof(asmVName), 
-							   "wl_z_%s", ins->arguments[argSpot]);break;
+			case PTR: res = wCFmt("wl_z_%s", ins->arguments[argSpot]);break;
 		};
-		if(CPU==AMD_X86_64) strcat(asmVName, "(%rip)");
+		if(CPU==AMD_X86_64) wCAppend(&res, "(%rip)");
 	} else {
 		char *bp = "rbp";
 		if(CPU==I386) bp = "ebp";
 		v = NULL;
 		v = queryLocalVariable(parser, ins->lineNum, ins->arguments[argSpot]);
-		if(v!=NULL) snprintf(asmVName, sizeof(asmVName), "-%d(%%%s)", v->offset, bp);
+		if(v!=NULL) res = wCFmt("-%d(%%s)", v->offset, bp);
 		else {
 			if(!atoi(ins->arguments[argSpot])&&
 					strcmp(ins->arguments[argSpot], "0")) {
-				snprintf(asmVName, sizeof(asmVName), "%s", ins->arguments[argSpot]);
-				if(CPU==AMD_X86_64) strcat(asmVName, "(%rip)");
+				res = wCFmt("%s", ins->arguments[argSpot]);
+				if(CPU==AMD_X86_64) wCAppend(&res, "(%rip)");
 			} else {
-				snprintf(asmVName, sizeof(asmVName), "$%s", ins->arguments[argSpot]);
+				res = wCFmt("$%s", ins->arguments[argSpot]);
 			}
 		}
 	}
-	res = calloc(strlen(asmVName)+1, sizeof(char));
-	strcpy(res, asmVName);
-	return res;
+
+	return res.data;
 }
 
 /*
@@ -184,23 +175,23 @@ char *getCurrentVar(struct parserData *parser, Instruction *ins, int argSpot) {
  * */
 char* triArgInsRDest(char *ins, Instruction *wins) {
 	int bsize = wins->argLen*1024;
-	char *buf = calloc(bsize, sizeof(char));
+	wString buf;
 	char *dest = mapRegisterAMD_X86_64(wins->arguments[0]);
 	char *s1 = mapRegisterAMD_X86_64(wins->arguments[0]);
 	char *s2 = mapRegisterAMD_X86_64(wins->arguments[1]);
 	if((!strcmp(dest,s1)&&!strcmp(dest,s2))||!strcmp(s1,s2)) {
-		if(CPU==AMD_X86_64) snprintf(buf, bsize*sizeof(char), "\t%sq %%%s, %%%s\n", ins, dest, dest);
-		else if(CPU==I386) snprintf(buf, bsize*sizeof(char), "\t%sl %%%s, %%%s\n", ins, dest, dest);
+		if(CPU==AMD_X86_64) buf = wCFmt("\t%sq %%s, %%s\n", ins, dest, dest);
+		else if(CPU==I386) buf = wCFmt("\t%sl %%s, %%s\n", ins, dest, dest);
 	} else {
 		if(CPU==AMD_X86_64) {
-			snprintf(buf, bsize*sizeof(char), 
-					"\tmovq %%%s, %%%s\n\t%sq %%%s, %%%s\n", s2, dest, ins, s1, dest);
+			buf = wCFmt("\tmovq %%s, %%s\n\t%sq %%s, %%s\n", 
+					s2, dest, ins, s1, dest);
 		} else if(CPU==I386) {
-				snprintf(buf, bsize*sizeof(char), 
-					"\tmovl %%%s, %%%s\n\t%sl %%%s, %%%s\n", s2, dest, ins, s1, dest);
+			buf = wCFmt("\tmovl %%s, %%s\n\t%sl %%s, %%s\n", 
+					s2, dest, ins, s1, dest);
 		}
 	}
-	return buf;
+	return buf.data;
 }
 
 /*This looks redundant on x86_64 because the instructions are pretty much the same for jumps*/
@@ -213,9 +204,7 @@ char *getIfStateCmp(char *arg) {
 }
 
 char *ifStateConvert(AsmOut *out, Instruction *ins) {
-	char *ret = NULL;
-	char outBuf[DEFMAXFSIZE];
-
+	wString res;
 	char *val1 = NULL;
 	char *val2 = NULL;
 	char *scopeName = ins->arguments[0];
@@ -244,15 +233,14 @@ char *ifStateConvert(AsmOut *out, Instruction *ins) {
 		free(var); var = NULL;
 	}
 	if(CPU==I386) cmp = "cmpl";
-	snprintf(outBuf, sizeof(outBuf), "\t%s %s, %s\n"
-			"\t%s .%s\n"
-			".%s_cont:\n",
-			cmp, val2, val1, op, scopeName, scopeName);
+	res = wCFmt("\t%s %s, %s\n"
+				"\t%s .%s\n"
+				".%s_cont:\n",
+				cmp, val2, val1, op, scopeName, scopeName);
 	if(val1) {free(val1);val1=NULL;}
 	if(val2) {free(val2);val2=NULL;}
-	ret = calloc(strlen(outBuf)+1, sizeof(char));
-	strcpy(ret, outBuf);
-	return ret;
+
+	return res.data;
 }
 
 /*

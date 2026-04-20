@@ -32,15 +32,10 @@ _main:
 	ldr x0, [sp, #39]
 	str x1, [sp, #0]
 	str x2, [sp, #8]
-
 	str x3, [sp, #16]
-
 	str x4, [sp, #24]
-
 	str x5, [sp, #32]
-
 	str x6, [sp, #40]
-
 	bl _printf
 	ldr x0, [sp, #47]
 	ldr x1, [sp, #55]
@@ -50,15 +45,10 @@ _main:
 	ldr x0, [sp, #63]
 	str x1, [sp, #0]
 	str x2, [sp, #8]
-
 	str x3, [sp, #16]
-
 	str x4, [sp, #24]
-
 	str x5, [sp, #32]
-
 	str x6, [sp, #40]
-
 	bl _printf
 	mov x0, x0
 	ldp x29, x30, [sp, #64]

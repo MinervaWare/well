@@ -2,6 +2,9 @@
 /*Copyright (c) 2022-2024 Tristan Wellman*/
 #include "util.h"
 
+/*Allocator(s): For now I will just call standard C 
+ * 				functions until I do like a bump allocator or something
+ */
 wAllocator wDefaultAllocator;
 
 _W_HOT void *wDefaultAllocatorProc(int size, wAllocMode mode, 

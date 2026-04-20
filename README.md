@@ -46,6 +46,8 @@ MinervaWare Contact: https://www.minervaware.net/contact
 
 # Compile Wellang
 
+Wellang has no dependancies other than gcc.
+
 To compile Wellang simply run:
 
 ```

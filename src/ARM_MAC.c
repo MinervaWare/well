@@ -310,7 +310,9 @@ char *ARM_MACInitializeExternStackData(ExternData *data) {
 	for(;i<argSize;i++) {
 		if(data->argTypes[i]==ANY) {
 			for(j=i;j<7;j++) { /*every register after the variadic is included*/
-				wString buf = wCFmt("\tstr x%d, [sp, #%d]\n\n", j, offset);
+				wString buf;
+				if(offset==0) buf = wCFmt("\tstr x%d, [sp, #%d]\n\n", j, offset);
+				else buf = wCFmt("\tstr x%d, [sp, #%d]\n", j, offset);
 				wAppend(&ret, &buf);
 				offset += 8;
 			}
@@ -319,7 +321,8 @@ char *ARM_MACInitializeExternStackData(ExternData *data) {
 	return ret.data;
 }
 
-void insertDefaultMappedArm3Instruction(char *outBuf, int outlen, char *instruction, Instruction *ins) {
+void insertDefaultMappedArm3Instruction(char *outBuf, int outlen, 
+		char *instruction, Instruction *ins) {
 	if(!ins||!outBuf) return;
 	if(ins->arguments[0]!=NULL&&ins->arguments[1]!=NULL&&
 			ins->arguments[2]!=NULL) {

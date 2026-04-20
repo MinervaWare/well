@@ -1129,10 +1129,7 @@ struct parserData *initParser(wData *data) {
 					sizeof(char *)*(2048*mul));
 			mul++;
 		} 
-		/*if(line[0]=='\n'||line[0]=='\0'||line[0]==';') {
-			j++;
-			continue;
-		}*/
+
 		rawptr = line;
 		WTRIM(rawptr);
 		gPData->fileBuffer[i-j] = calloc(strlen(rawptr)+1, sizeof(char));

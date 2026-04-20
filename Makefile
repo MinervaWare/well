@@ -3,6 +3,8 @@ CC?= gcc
 CFLAGS?= -g -O2 -std=c89 -pedantic-errors -Wdeclaration-after-statement -Wvla -Iinclude -Wall -Wframe-larger-than=2048  -Wno-implicit-function-declaration -Wno-unused-variable -Wno-unused-result -Wno-strict-prototypes 
 CFLAGS_REL= -O2 -std=c89 -Iinclude -fomit-frame-pointer -fconserve-stack -Wall -Wframe-larger-than=2048  -Wno-implicit-function-declaration -Wno-unused-variable -Wno-unused-result
 
+LDFLAGS= -lm
+
 SRCS:= $(wildcard src/*.c) \
 	   $(wildcard include/*.c)
 OBJS:= $(SRCS:.c=.o)
@@ -18,10 +20,10 @@ all: base
 	$(CC) $(CFLAGS) -c $< -o $@
 
 base: $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $(BIN)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) -o $(BIN)
 
 release: $(OBJS)
-	$(CC) $(CFLAGS_REL) $(OBJS) -o $(BIN)
+	$(CC) $(CFLAGS_REL) $(LDFLAGS) $(OBJS) -o $(BIN)
 
 run_test:
 	well tests/helloWorld/helloworld.well -i

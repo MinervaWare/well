@@ -47,6 +47,8 @@ typedef unsigned long int uint64_t;
 #define ARRLEN(x) \
 		(sizeof(x)/sizeof(x[0]))
 
+#define _wGetCStrSize(_data) (strlen(_data)+1)
+
 #define STARTAPPCHAR(str_, c_) \
 	do{char *STRET_ = calloc((strlen(str_)+2),sizeof(char)); \
 	STRET_[0] = c_; \
@@ -80,6 +82,26 @@ typedef unsigned long int uint64_t;
 #	define _W_COLD _W_NONE
 #	define _W_PURE _W_NONE
 #endif
+
+/*allocation shit*/
+
+typedef enum {
+	ALLOC,
+	RESIZE,
+	FREE
+} wAllocMode;
+
+typedef void *(*WALLOCPROC)(int size, wAllocMode mode, void *oldMem);
+
+typedef struct {
+	WALLOCPROC allocProc;
+} wAllocator;
+
+_W_COLD void wInitDefaultAllocator();
+_W_COLD void wSetAllocator(WALLOCPROC proc);
+_W_HOT void *wAlloc(int _size);
+_W_HOT void *wResize(void *_oldMem, int _size);
+_W_HOT void wFree(void *_oldMem);
 
 /*Private util implementations*/
 
@@ -162,10 +184,13 @@ _W_PRIVATE int findIndexOfAnyRight(char *str, char *any) {
 
 _W_PRIVATE char *removeUpTo(char *str, int i) {
 	char *n = NULL;
+	char *res = NULL;
 	int start = 0, size = 0;
 	if(!str||i<0) return n;
 	n = str + i+1;
-	return strdup(n);
+	res = (char *)wAlloc((_wGetCStrSize(n)+1)*sizeof(char));
+	strcpy(res, n);
+	return res;
 }
 
 _W_PRIVATE char *stripFilenameFromPath(char *path) {
@@ -175,28 +200,6 @@ _W_PRIVATE char *stripFilenameFromPath(char *path) {
 	return removeUpTo(path, i);
 }
 
-/*Allocator(s): For now I will just call standard C 
- * 				functions until I do like a bump allocator or something
- */
-
-typedef enum {
-	ALLOC,
-	RESIZE,
-	FREE
-} wAllocMode;
-
-typedef void *(*WALLOCPROC)(int size, wAllocMode mode, void *oldMem);
-
-typedef struct {
-	WALLOCPROC allocProc;
-} wAllocator;
-
-_W_COLD void wInitDefaultAllocator();
-_W_COLD void wSetAllocator(WALLOCPROC proc);
-_W_HOT void *wAlloc(int _size);
-_W_HOT void *wResize(void *_oldMem, int _size);
-_W_HOT void wFree(void *_oldMem);
-
 /*Basic string utilities*/
 
 typedef struct {
@@ -204,8 +207,6 @@ typedef struct {
 	unsigned int count;
 	unsigned int reserved;
 } wString;
-
-#define _wGetCStrSize(_data) (strlen(_data)+1)
 
 _W_PRIVATE wString wInitString(int reserved) {
 	wString res;
@@ -309,9 +310,10 @@ _W_PRIVATE void _wFmtInt(wString *string, int i) {
 	int digits;
 	char *cursor = NULL;
 	int j = i;
+	wString res;
 	if(i==0) digits = 1;
 	else digits = (int)log10(abs(i))+1;
-	wString res = wInitString(MAXOUTLEN);
+	res = wInitString(MAXOUTLEN);
 	if(i<0) {
 		char n = '-';
 		i = abs(i);
@@ -347,7 +349,7 @@ _W_PRIVATE wString wCFmt(char *fmt, ...) {
 	wAssign(&res, "\0");
 	
 	for(i=0;i<fmtSize;i++) {if(fmt[i]=='%') percents++;}
-	va_start(args, percents);
+	va_start(args, fmt);
 	for(i=0;i<fmtSize-1;i++) {
 		char c = fmt[i];
 		char tmp[2];
