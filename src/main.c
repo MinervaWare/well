@@ -18,7 +18,7 @@ void initArgParseArgs(wData *data, int argc, char *argv[]);
 void compileFile(wData *data); 
 
 int main(int argc, char **argv) {
-	WINITDEFAULTALLOCATOR;
+	wInitDefaultAllocator();
 
 	clock_t start, end;
 	struct parserData *p;

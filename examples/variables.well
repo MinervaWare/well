@@ -1,1 +1,14 @@
-; Wellang 
+~constants {
+	~string:str = "This is a string\n"
+	~char:c = "c"
+	~int:i = 69420
+	~float:f = 69.420
+	~ptr:p = 0
+}
+
+~int:main {
+	~string:local = "This is a local variable\n"
+	move~ local, r1
+	call~ printf
+	return~ 0
+}

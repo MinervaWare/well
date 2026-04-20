@@ -20,35 +20,34 @@ MacRegData *macRegData = NULL;
  * This will be fixed later depending on what we need.
  * */
 char *stackAllocateARM_MAC(enum cpuType cpu) {
-	char *ret = calloc(1024, sizeof(char));
+	wString ret = wInitString(1024); 
 	CPU = cpu;
 	/*auto to 16*/
-	sprintf(ret, "\tsub sp, sp, #80\n\tstp x29, x30, [sp, #64]\n\tadd x29, sp, #64\n");
-	return ret; 
+	wAssign(&ret, "\tsub sp, sp, #80\n\tstp x29, x30, [sp, #64]\n\tadd x29, sp, #64\n");
+	return ret.data; 
 }
 
 char *stackDeallocateARM_MAC() {
 	/*auto to 16*/
-	char *ret = calloc(1024, sizeof(char));
-	sprintf(ret, "\tldp x29, x30, [sp, #64]\n\tadd sp, sp, #80\n");
-	return ret; 
+	wString ret = wInitString(1024);
+	wAssign(&ret, "\tldp x29, x30, [sp, #64]\n\tadd sp, sp, #80\n");
+	return ret.data; 
 }
 
 /*
  * Choose between standard elf and mach value definitions.
  * */
 char *getTargetValVariationARM_MAC(char *value, int operand) {
-	int len = strlen(value)+128;
-	char *res = calloc(len, sizeof(char));
+	wString res;
 	if(CPU!=ARM_MAC) { 
-		if(operand==2) snprintf(res, sizeof(char)*len, ":lo12:%s", value);
-		else snprintf(res, sizeof(char)*len, "%s", value);
+		if(operand==2) res = wCFmt(":lo12:%s", value);
+		else res = wCFmt("%s", value);
 	} else {
-		if(operand==1) snprintf(res, sizeof(char)*len, "%s@PAGE", value); 
-		else if(operand==2) snprintf(res, sizeof(char)*len, "%s@PAGEOFF", value);
-		else snprintf(res, sizeof(char)*len, "%s", value);
+		if(operand==1) res = wCFmt("%s@PAGE", value); 
+		else if(operand==2) res = wCFmt("%s@PAGEOFF", value);
+		else res = wCFmt("%s", value);
 	}
-	return res;
+	return res.data;
 }
 
 void ARM_MACGetLVAlloc(char *buf, int bSize, Variable *var) {
@@ -157,75 +156,62 @@ char getVarRegType(enum varTypes type) {
 }
 
 char *ARM_MACgetCurrentVar(struct parserData *parser, Instruction *ins, int argSpot) {
-	char *res = NULL;
+	wString res;
 	Variable *v = NULL;
-	char asmVName[1024];
 	if(parser==NULL||ins==NULL) return NULL;
 	v = getVarFrom(parser, ins->arguments[argSpot]);
 	if(v!=NULL) {
 		switch(v->type) {
-			case STRING: snprintf(asmVName, sizeof(asmVName),
-								 "wl_str_%s", ins->arguments[argSpot]);break;
-			case CHAR: snprintf(asmVName, sizeof(asmVName),
-							   "wl_ch_%s", ins->arguments[argSpot]);break;
-			case INT: snprintf(asmVName, sizeof(asmVName),
-							  "wl_int_%s", ins->arguments[argSpot]);break;
-			case FLOAT: snprintf(asmVName, sizeof(asmVName),
-								"wl_fl_%s", ins->arguments[argSpot]);break;
+			case STRING: res = wCFmt("wl_str_%s", ins->arguments[argSpot]);break;
+			case CHAR: res = wCFmt("wl_ch_%s", ins->arguments[argSpot]);break;
+			case INT: res = wCFmt("wl_int_%s", ins->arguments[argSpot]);break;
+			case FLOAT: res = wCFmt("wl_fl_%s", ins->arguments[argSpot]);break;
 			case VOID: /*TODO*/break;
-			case PTR: snprintf(asmVName, sizeof(asmVName), 
-							   "wl_z_%s", ins->arguments[argSpot]);break;
+			case PTR: res = wCFmt("wl_z_%s", ins->arguments[argSpot]);break;
 		};
 	} else {
 		v = NULL;
 		v = queryLocalVariable(parser, ins->lineNum, ins->arguments[argSpot]);
-		if(v!=NULL) snprintf(asmVName, sizeof(asmVName), "[sp, #%d]", v->offset+RESERVEDARGOFFSET);
+		if(v!=NULL) res = wCFmt("[sp, #%d]", v->offset+RESERVEDARGOFFSET);
 		else {
 			if(!atoi(ins->arguments[argSpot])&&
 					strcmp(ins->arguments[argSpot], "0")) {
-				if(CPU!=ARM_MAC) snprintf(asmVName, sizeof(asmVName), "%s", ins->arguments[argSpot]);
-				else snprintf(asmVName, sizeof(asmVName), "_%s", ins->arguments[argSpot]);
+				if(CPU!=ARM_MAC) res = wCFmt("%s", ins->arguments[argSpot]);
+				else res = wCFmt("_%s", ins->arguments[argSpot]);
 			} else {
-				snprintf(asmVName, sizeof(asmVName), "#%s", ins->arguments[argSpot]);
+				res = wCFmt("#%s", ins->arguments[argSpot]);
 			}
 		}
 	}
-	res = calloc(strlen(asmVName)+1, sizeof(char));
-	strcpy(res, asmVName);
-	return res;
+
+	return res.data;
 }
 
 char *ARM_MACgetMoveInstructions(struct parserData *parser, Instruction *ins, 
 		char *val1, char *val2) {
-	char *res = NULL;
-	char outBuf[1024];
+	wString res;
 	Variable *var = getVarFrom(parser, ins->arguments[0]);
 	if(var) {
 		if(var->varName!=NULL) {
 			switch(var->type) {
-				case INT: snprintf(outBuf, sizeof(outBuf), 
-								  "\tadrp %s,%s\n\tldr w%s, [%s, %s]\n",
+				case INT: res = wCFmt("\tadrp %s,%s\n\tldr w%s, [%s, %s]\n",
 								  val2, getTargetValVariationARM_MAC(val1, 1), 
 								  val2+1, val2, getTargetValVariationARM_MAC(val1, 2));
 						  break;
-				case CHAR: snprintf(outBuf, sizeof(outBuf), 
-								  "\tadrp %s,%s\n\tldrsb w%s, [%s, %s]\n",
+				case CHAR: res = wCFmt("\tadrp %s,%s\n\tldrsb w%s, [%s, %s]\n",
 								  val2, getTargetValVariationARM_MAC(val1, 1), 
 								  val2+1, val2, getTargetValVariationARM_MAC(val1, 2));
 						   break;
 				case PTR:
-				case STRING: snprintf(outBuf, sizeof(outBuf), 
-								  "\tadrp %s,%s\n\tadd %s, %s, %s\n",
+				case STRING: res = wCFmt("\tadrp %s,%s\n\tadd %s, %s, %s\n",
 								  val2, getTargetValVariationARM_MAC(val1, 1), 
 								  val2, val2, getTargetValVariationARM_MAC(val1, 2));
 							 break;
-				case FLOAT: snprintf(outBuf, sizeof(outBuf), 
-								  "\tadrp %s,%s\n\tldr s%s, [%s, %s]\n",
+				case FLOAT: res = wCFmt("\tadrp %s,%s\n\tldr s%s, [%s, %s]\n",
 								  val2, getTargetValVariationARM_MAC(val1, 1), 
 								  val2+1, val2, getTargetValVariationARM_MAC(val1, 2));
 							break;
-				default: snprintf(outBuf, sizeof(outBuf), 
-								 "\tadrp %s,%s\n\tadd %s, %s, %s\n",
+				default: res = wCFmt("\tadrp %s,%s\n\tadd %s, %s, %s\n",
 								 val2, getTargetValVariationARM_MAC(val1, 1), 
 								 val2, val2, getTargetValVariationARM_MAC(val1, 2));
 						 break;
@@ -234,31 +220,26 @@ char *ARM_MACgetMoveInstructions(struct parserData *parser, Instruction *ins,
 	} else {
 		var = queryLocalVariable(parser, ins->lineNum, ins->arguments[0]);
 		if(var) {
-			snprintf(outBuf, sizeof(outBuf),
-					"\tldr %s, [sp, #%d]\n", val2, var->offset+RESERVEDARGOFFSET);
+			res = wCFmt("\tldr %s, [sp, #%d]\n", val2, var->offset+RESERVEDARGOFFSET);
 		} else {
 			if(checkRegister(ins->arguments[0])&&
 					!checkRegister(ins->arguments[1])) {
 				var = queryLocalVariable(parser, ins->lineNum, ins->arguments[1]);
 				if(var) {
-					snprintf(outBuf, sizeof(outBuf), 
-							"\tstr %s, [sp, #%d]\n", val1, var->offset+RESERVEDARGOFFSET);
+					res = wCFmt("\tstr %s, [sp, #%d]\n", val1, var->offset+RESERVEDARGOFFSET);
 				}
 			} else if(checkRegister(ins->arguments[0])&&
 					checkRegister(ins->arguments[1])) {
-				snprintf(outBuf, sizeof(outBuf), 
-						"\tmov %s, %s\n", val2, val1);
+				res = wCFmt("\tmov %s, %s\n", val2, val1);
 			} else {
-				snprintf(outBuf, sizeof(outBuf), 
-						"\tadrp %s,%s\n\tadd %s, %s, %s\n",
+				res = wCFmt("\tadrp %s,%s\n\tadd %s, %s, %s\n",
 						val2, getTargetValVariationARM_MAC(val1, 1), 
 						val2, val2, getTargetValVariationARM_MAC(val1, 2));
 			}
 		}
 	}
-	res = calloc(strlen(outBuf)+1, sizeof(char));
-	strcpy(res, outBuf);
-	return res;
+
+	return res.data;
 }
 
 char *getIfStateCmpARM_MAC(char *arg) {
@@ -270,8 +251,7 @@ char *getIfStateCmpARM_MAC(char *arg) {
 }
 
 char *ifStateConvertARM_MAC(AsmOut *out, Instruction *ins) {
-	char *ret = NULL;
-	char outBuf[DEFMAXFSIZE];
+	wString ret;
 
 	char *val1 = NULL;
 	char *val2 = NULL;
@@ -298,31 +278,29 @@ char *ifStateConvertARM_MAC(AsmOut *out, Instruction *ins) {
 		free(var); var = NULL;
 	}
 	if(val1[0]=='[') { /*Local var*/
-		snprintf(outBuf, sizeof(outBuf), "\tldr x15, %s\n"
-										 "\tcmp x15, %s\n"
-										 "\t%s .%s\n.%s_cont:\n", 
-										 val1, val2, op, scopeName, scopeName);
+		ret = wCFmt("\tldr x15, %s\n"
+					"\tcmp x15, %s\n"
+					"\t%s .%s\n.%s_cont:\n", 
+					val1, val2, op, scopeName, scopeName);
 	} else if(val2[0]=='[') {
-		snprintf(outBuf, sizeof(outBuf), "\tldr x15, %s\n"
-										 "\tcmp x15, %s\n"
-										 "\t%s .%s\n.%s_cont:\n", 
-										 val2, val1, op, scopeName, scopeName);
+		ret = wCFmt("\tldr x15, %s\n"
+					 "\tcmp x15, %s\n"
+					 "\t%s .%s\n.%s_cont:\n", 
+					 val2, val1, op, scopeName, scopeName);
 	} else {
-		snprintf(outBuf, sizeof(outBuf), "\tcmp %s, %s\n"
-										 "\t%s .%s\n"
-										 ".%s_cont:\n",
-										 val1, val2, op, scopeName, scopeName);
+		ret = wCFmt("\tcmp %s, %s\n"
+					"\t%s .%s\n"
+					".%s_cont:\n",
+					val1, val2, op, scopeName, scopeName);
 	}
 	if(val1) {free(val1);val1=NULL;}
 	if(val2) {free(val2);val2=NULL;}
-	ret = calloc(strlen(outBuf)+1, sizeof(char));
-	strcpy(ret, outBuf);
-	return ret;
+
+	return ret.data;
 }
 
 char *ARM_MACInitializeExternStackData(ExternData *data) {
-	char *ret;
-	char outBuf[DEFMAXFSIZE] = "";	
+	wString ret = wInitString(DEFMAXFSIZE);
 	unsigned int argSize;
 	int i = 0;
 	int j = 0;
@@ -332,16 +310,13 @@ char *ARM_MACInitializeExternStackData(ExternData *data) {
 	for(;i<argSize;i++) {
 		if(data->argTypes[i]==ANY) {
 			for(j=i;j<7;j++) { /*every register after the variadic is included*/
-				char buf[1024];
-				snprintf(buf, sizeof(buf), "\tstr x%d, [sp, #%d]\n", j, offset);
-				strcat(outBuf, buf);
+				wString buf = wCFmt("\tstr x%d, [sp, #%d]\n\n", j, offset);
+				wAppend(&ret, &buf);
 				offset += 8;
 			}
 		}
 	}
-	ret = calloc(strlen(outBuf)+1, sizeof(char));
-	strcpy(ret, outBuf);
-	return ret;
+	return ret.data;
 }
 
 void insertDefaultMappedArm3Instruction(char *outBuf, int outlen, char *instruction, Instruction *ins) {

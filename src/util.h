@@ -191,32 +191,11 @@ typedef struct {
 	WALLOCPROC allocProc;
 } wAllocator;
 
-_W_PRIVATE void *wDefaultAllocatorProc(int size, wAllocMode mode, void *oldMem) {
-	switch(mode) {
-		case ALLOC: return malloc(size);
-		case RESIZE: {
-			WASSERT(oldMem!=NULL, "Passed NULL memory to resize!");
-			return realloc(oldMem, size);
-		}
-		case FREE: {
-			WASSERT(oldMem!=NULL, "Passed NULL memory to free!");
-			free(oldMem); 
-		}
-	};
-	return NULL;
-}
-
-static wAllocator wDefaultAllocator;
-
-#define WINITDEFAULTALLOCATOR \
-	wDefaultAllocator.allocProc = (WALLOCPROC)wDefaultAllocatorProc;
-
-_W_PRIVATE void *wAlloc(int _size) {
-	return wDefaultAllocator.allocProc((_size), ALLOC, NULL);}
-_W_PRIVATE void *wResize(void *_oldMem, int _size) {
-	return wDefaultAllocator.allocProc((_size), RESIZE, _oldMem);}
-_W_PRIVATE void wFree(void *_oldMem) {
-	wDefaultAllocator.allocProc(0, FREE, _oldMem);}
+_W_COLD void wInitDefaultAllocator();
+_W_COLD void wSetAllocator(WALLOCPROC proc);
+_W_HOT void *wAlloc(int _size);
+_W_HOT void *wResize(void *_oldMem, int _size);
+_W_HOT void wFree(void *_oldMem);
 
 /*Basic string utilities*/
 
@@ -283,7 +262,8 @@ _W_PRIVATE void wAppend(wString *dst, wString *input) {
 	newSize = dst->count+input->count-1; 
 	if(newSize>dst->reserved) 
 		dst->data = (char *)wResize(dst->data, newSize*sizeof(char));
-	cursor = dst->count-1;
+	if(dst->count>0) cursor = dst->count-1;
+	else cursor = dst->count;
 	start = dst->data+cursor;
 	memcpy(start, input->data, input->count*sizeof(char));
 	dst->count = newSize;
@@ -308,7 +288,8 @@ _W_PRIVATE void wCAppend(wString *dst, char *input) {
 	newSize = dst->count+inputSize-1; 
 	if(newSize>dst->reserved) 
 		dst->data = (char *)wResize(dst->data, newSize*sizeof(char));
-	cursor = dst->count-1;
+	if(dst->count>0) cursor = dst->count-1;
+	else cursor = dst->count;
 	start = dst->data+cursor;
 	memcpy(start, input, inputSize*sizeof(char));
 	dst->count = newSize;
@@ -318,6 +299,76 @@ _W_PRIVATE void wCAppend(wString *dst, char *input) {
 _W_PRIVATE void wCAppendLine(wString *dst, char *input) {
 	wCAppend(dst, "\n");
 	wCAppend(dst, input);
+}
+
+/*Fmt and printing*/
+
+_W_PRIVATE void _wFmtInt(wString *string, int i) {
+	int MAXOUTLEN = 64;
+	int base = 10;
+	int digits;
+	char *cursor = NULL;
+	int j = i;
+	if(i==0) digits = 1;
+	else digits = (int)log10(abs(i))+1;
+	wString res = wInitString(MAXOUTLEN);
+	if(i<0) {
+		char n = '-';
+		i = abs(i);
+		wCAppend(&res, &n);
+	}
+	res.count += digits;
+	cursor = res.data+res.count-1;
+	if(!i) *cursor = '0';
+	else {
+		for(;i>0;i/=10) {
+			*cursor = i%base+'0';
+			cursor--;
+		}
+	}
+	res.data[res.count] = '\0';
+	res.count++;
+	wAppend(string, &res);
+}
+
+_W_PRIVATE void _wFmtStr(wString *string, wString s) {
+	wAppend(string, &s);
+}
+
+_W_PRIVATE void _wCFmtStr(wString *string, char *s) {
+	wCAppend(string, s);
+}
+
+/*@TODO handle floats and maybe some stadard wellang structs or something.*/
+_W_PRIVATE wString wCFmt(char *fmt, ...) {
+	int i, fmtSize = _wGetCStrSize(fmt), percents = 0;
+	wString res = wInitString(fmtSize);
+	va_list args;
+	wAssign(&res, "\0");
+	
+	for(i=0;i<fmtSize;i++) {if(fmt[i]=='%') percents++;}
+	va_start(args, percents);
+	for(i=0;i<fmtSize-1;i++) {
+		char c = fmt[i];
+		char tmp[2];
+		char next = '\0';
+		char last = '\0';
+		tmp[0] = c;
+		tmp[1] = '\0';
+		if(i+1<fmtSize-1) next = fmt[i+1];
+		if(i-1>=0) last = fmt[i-1];
+		if(c=='%'&&next!='\0') {
+			switch(next) {
+				case 'd': _wFmtInt(&res, va_arg(args, int)); break;
+				case 's': _wCFmtStr(&res, va_arg(args, char *)); break;
+				case 'w': _wFmtStr(&res, va_arg(args, wString)); break;
+				default: wCAppend(&res, tmp); break;
+			}
+		} else if(last!='%') wCAppend(&res, tmp);
+	}
+	va_end(args);
+
+	return res;
 }
 
 #endif
