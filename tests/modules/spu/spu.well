@@ -1,0 +1,8 @@
+; Copyright (c) 2024-2026 MinervaWare LLC
+; Copyright (c) 2022-2024 Tristan Wellman
+; Cell Broadband Engine SPU Testing
+#NOMAIN
+
+~int:main {
+	 
+}

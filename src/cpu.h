@@ -16,7 +16,8 @@ enum cpuType {
 	SPARC,
 	SZ_IBM, /*System 370, 390*/
 	MIPS,
-	HPPA
+	HPPA,
+	SPU /*CBE SPU. Must be manually called for linkage with ppc*/
 };
 
 static enum cpuType CPU =
@@ -57,6 +58,9 @@ static enum cpuType CPU =
 #else
 	I386; /*Default to x86*/
 #endif
+
+#define SPUGCC "spu-elf-gcc"
+#define SPUEMB "embedspu"
 
 #define GETCPUSTR(cpu_t, str) \
 	switch(cpu_t) {\

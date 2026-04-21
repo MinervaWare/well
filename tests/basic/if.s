@@ -12,12 +12,12 @@ jeT:
 	str x15, [sp, #47]
 	ldr x15, [sp, #47]
 	cmp x15, #10
-	beq .wl_jeT_is_0
-.wl_jeT_is_0_cont:
+	beq .wl_jeT_is_09
+.wl_jeT_is_09_cont:
 	ldp x29, x30, [sp, #64]
 	add sp, sp, #80
 	ret
-.wl_jeT_is_0:
+.wl_jeT_is_09:
 	ldr x0, [sp, #39]
 	ldr x1, [sp, #47]
 	str x1, [sp, #0]
@@ -27,7 +27,7 @@ jeT:
 	str x5, [sp, #32]
 	str x6, [sp, #40]
 	bl _printf
-	b .wl_jeT_is_0_cont
+	b .wl_jeT_is_09_cont
 	.global jneT
 	.p2align 2
 jneT:
@@ -41,12 +41,12 @@ jneT:
 	str x15, [sp, #47]
 	ldr x15, [sp, #47]
 	cmp x15, #10
-	bne .wl_jneT_is_0
-.wl_jneT_is_0_cont:
+	bne .wl_jneT_is_019
+.wl_jneT_is_019_cont:
 	ldp x29, x30, [sp, #64]
 	add sp, sp, #80
 	ret
-.wl_jneT_is_0:
+.wl_jneT_is_019:
 	ldr x0, [sp, #39]
 	ldr x1, [sp, #47]
 	str x1, [sp, #0]
@@ -56,7 +56,7 @@ jneT:
 	str x5, [sp, #32]
 	str x6, [sp, #40]
 	bl _printf
-	b .wl_jneT_is_0_cont
+	b .wl_jneT_is_019_cont
 	.global jgeT
 	.p2align 2
 jgeT:
@@ -70,12 +70,12 @@ jgeT:
 	str x15, [sp, #47]
 	ldr x15, [sp, #47]
 	cmp x15, #10
-	bne .wl_jgeT_is_0
-.wl_jgeT_is_0_cont:
+	bge .wl_jgeT_is_029
+.wl_jgeT_is_029_cont:
 	ldp x29, x30, [sp, #64]
 	add sp, sp, #80
 	ret
-.wl_jgeT_is_0:
+.wl_jgeT_is_029:
 	ldr x0, [sp, #39]
 	ldr x1, [sp, #47]
 	str x1, [sp, #0]
@@ -85,7 +85,7 @@ jgeT:
 	str x5, [sp, #32]
 	str x6, [sp, #40]
 	bl _printf
-	b .wl_jgeT_is_0_cont
+	b .wl_jgeT_is_029_cont
 	.global jleT
 	.p2align 2
 jleT:
@@ -99,12 +99,12 @@ jleT:
 	str x15, [sp, #47]
 	ldr x15, [sp, #47]
 	cmp x15, #10
-	ble .wl_jleT_is_0
-.wl_jleT_is_0_cont:
+	ble .wl_jleT_is_039
+.wl_jleT_is_039_cont:
 	ldp x29, x30, [sp, #64]
 	add sp, sp, #80
 	ret
-.wl_jleT_is_0:
+.wl_jleT_is_039:
 	ldr x0, [sp, #39]
 	ldr x1, [sp, #47]
 	str x1, [sp, #0]
@@ -114,7 +114,7 @@ jleT:
 	str x5, [sp, #32]
 	str x6, [sp, #40]
 	bl _printf
-	b .wl_jleT_is_0_cont
+	b .wl_jleT_is_039_cont
 	.global _main
 	.p2align 2
 _main:

@@ -27,7 +27,7 @@
 ~void:jgeT {
 	~string:jgets = "(i >= 10) pass\n"
 	~int:i = 11
-	~if(i != 10) {
+	~if(i >= 10) {
 		move~ jgets, r1
 		move~ i, r2
 		call~ printf

@@ -105,33 +105,20 @@ _W_HOT void wFree(void *_oldMem);
 
 /*Private util implementations*/
 
-#define WSTR_TABLE_HEAP 1
-#define WSTR_TABLE_BUCKET wStrBucket
-#define WSTR_TABLE_FREE_KEY(key)
-#define WSTR_TABLE_HASH(key, hash)        chash_string_hash(key, hash)
-#define WSTR_TABLE_FREE_VALUE(value)      NULL
-#define WSTR_TABLE_COMPARE(cmp_a, cmp_b)  chash_string_compare(cmp_a, cmp_b)
-#define WSTR_TABLE_INIT(bucket, _key, _value)   strcpy((bucket).key, _key); \
+#define WCSTR_TABLE_HEAP 1
+#define WCSTR_TABLE_BUCKET wCStrBucket
+#define WCSTR_TABLE_FREE_KEY(key)
+#define WCSTR_TABLE_HASH(key, hash)        chash_string_hash(key, hash)
+#define WCSTR_TABLE_FREE_VALUE(value)      NULL
+#define WCSTR_TABLE_COMPARE(cmp_a, cmp_b)  chash_string_compare(cmp_a, cmp_b)
+#define WCSTR_TABLE_INIT(bucket, _key, _value)   strcpy((bucket).key, _key); \
                                                   (bucket).value = _value;
-#define WINT_TABLE_HEAP 1
-#define WINT_TABLE_BUCKET wIntBucket
-#define WINT_TABLE_FREE_KEY(key)
-#define WINT_TABLE_HASH(key, hash)        chash_string_hash(key, hash)
-#define WINT_TABLE_FREE_VALUE(value)      NULL
-#define WINT_TABLE_COMPARE(cmp_a, cmp_b)  chash_string_compare(cmp_a, cmp_b)
-#define WINT_TABLE_INIT(bucket, _key, _value)   strcpy((bucket).key, _key); \
-                                                  (bucket).value = _value;
+
 typedef struct {
 	char key[1024];
 	int value;
 	int state;
-} wStrBucket;
-
-typedef struct {
-	int key;
-	int value;
-	int state;
-} wIntBucket;
+} wCStrBucket;
 
 #define WTABLE(_bucket) 					\
 	struct { 							\
