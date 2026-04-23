@@ -242,7 +242,9 @@ void tokenizeCCFlags(wData *data) {
 	}
 }
 
+/*@TODO: Again what the fuck is this dawg.*/
 void compileFile(wData *data) {
+#if OSCLASS == OS_UNIX
 	char *fileDirect = strtok(data->fileName, ".");
 	char *args[64];
 	int i;
@@ -353,6 +355,6 @@ args[1] = calloc(strlen(data->includedFiles[i])+1, sizeof(char *));
 		free(linkArgs);
 	}
 	free(data->flags);
-	/*cleanupAsm(data, fileDirect);*/
+#endif
 }
 
