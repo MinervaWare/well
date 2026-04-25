@@ -8,15 +8,15 @@ char *stackAllocateMIPS32(enum cpuType cpu) {
 	CPU = CPU;
 	wAssign(&ret, "\t.set noreorder\n\t.cpload $25\n");
 	wCAppend(&ret, "\taddiu $sp,$sp,-32\n\tsw $31,28($sp)\n");
-	wCAppend(&ret, "\tsw $fp,24($sp)\n\tmove $fp,$sp\n\t.cprestore 16");
+	wCAppend(&ret, "\tsw $fp,24($sp)\n\tmove $fp,$sp\n\t.cprestore 16\n");
 	return ret.data;
 }
 
-char *stackDeallocateMIPS32() {
+char *stackDeallocateMIPS32(char *funName) {
 	wString ret = wInitString(1024);
 	wCAppend(&ret, "\tmove $sp,$fp\n\tlw $31,28($sp)\n");
 	wCAppend(&ret, "\tlw $fp,24($sp)\n\taddiu $sp,$sp,32\n");
-	wCAppend(&ret, "\tjr $31\n\tnop\n");
+	wCAppend(&ret, wCFmt("\tjr $31\n\tnop\n\t.end %s\n", funName).data);
 }
 
 void MIPS32GetLVAlloc(char *buf, int bsize, Variable *var) {
@@ -70,10 +70,10 @@ char *convertInstructionMIPS32(AsmOut *out, Instruction ins) {
 		if(!strcmp(ins.instruction, "call")) {
 			if(ins.argLen>0&&ins.arguments[0]!=NULL) {
 				if(doesFunctionExistInternal(out->parser, ins.arguments[0])) {
-					wCAppend(&outBuf, wCFmt("\tlw $25,%got(%s)($28)\n",
+					wCAppend(&outBuf, wCFmt("\tlw $25,%got(%s)($28)\n\n",
 								ins.arguments[0]).data);
 				} else {
-					wCAppend(&outBuf, wCFmt("\tlw $25,%call16(%s)($28)\n", 
+					wCAppend(&outBuf, wCFmt("\tlw $25,% call16(%s)($28)\n\n", 
 								ins.arguments[0]).data);			
 				}
 				wCAppend(&outBuf, wCFmt("\t.reloc 1f,R_MIPS_JALR,%s\n", 
@@ -88,7 +88,7 @@ char *convertInstructionMIPS32(AsmOut *out, Instruction ins) {
 		} else if(!strcmp(ins.instruction, "return")) {
 			if(ins.arguments[0]!=NULL) {
 				char *reg = NULL;
-				char *dealloc = stackDeallocateMIPS32();
+				char *dealloc = stackDeallocateMIPS32(ins.funName);
 				if(strlen(ins.arguments[0])==0) ins.arguments[0] = "$0";
 				else reg = mapRegisterMIPS32(ins.arguments[0]);
 				if(reg!=NULL) {

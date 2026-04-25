@@ -25,7 +25,7 @@ enum registersMIPS32 {
 };
 
 char *stackAllocateMIPS32(enum cpuType cpu);
-char *stackDeallocateMIPS32();
+char *stackDeallocateMIPS32(char *funName);
 void MIPS32GetLVAlloc(char *buf, int bsize, Variable *var);
 char *convertInstructionMIPS32(AsmOut *out, Instruction ins);
 

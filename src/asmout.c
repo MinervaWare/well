@@ -46,6 +46,10 @@ int regToEnum(char *reg) {
 	return R1;
 }
 
+wString getWellVersionIdent() {
+	return wCFmt("\t.ident \"Well: (%s) %s\"\n", OSNAME, WELLANG_VERSION);
+}
+
 /*Instruction output*/
 
 char *dumpInlineASM(Instruction *ins) {
@@ -125,10 +129,10 @@ char *createFunctionHeader(char *name) {
 		case SPARC: break; /*TODO*/
 		case MIPS: {
 			   wCAppend(&head, 
-				   wCFmt("\t.text\n\t.align 2\n\t.global %s\n", name).data);
+				   wCFmt("\t.text\n\t.align 2\n\t.global %s\n\n", name).data);
 			   wCAppend(&head, "\t.set nomips16\n\t.set nomicromips\n");
-			   if(isEntryPoint(name)) wCAppend(&head, "\t.ent main\n");
-			   wCAppend(&head, wCFmt("\t%s:\n", name).data);
+			   wCAppend(&head, wCFmt("\t.ent %s\n", name).data);
+			   wCAppend(&head, wCFmt("%s:\n", name).data);
 			   break; 
 		}
 		case HPPA: break; /*TODO*/
@@ -379,7 +383,8 @@ void convertFunctions(AsmOut *out) {
 				case RS6000: break; /*TODO*/
 				case SZ_IBM: break; /*TODO*/
 				case SPARC: break; /*TODO*/
-				case MIPS: deallocateStack = stackDeallocateMIPS32();break; 
+				case MIPS: deallocateStack = 
+					   stackDeallocateMIPS32(out->parser->functions[i].funName);break;
 				case HPPA: break; /*TODO*/
 			};
 			if(CPU!=POWERPC) {
@@ -429,7 +434,7 @@ char *getAsmString(char *name, char *value) {
 		case RS6000: break; /*TODO*/
 		case SZ_IBM: break; /*TODO*/
 		case SPARC: break; /*TODO*/
-		case MIPS: res = wCFmt("\t.rdata\n\t.align 2\n\twl_str_%s:\n"
+		case MIPS: res = wCFmt("\t.rdata\n\t.align 2\nwl_str_%s:\n"
 					   "\t.asciz %s\n", name, value);break; 
 		case HPPA: break; /*TODO*/
 	};
@@ -605,6 +610,7 @@ void completeBuffer(AsmOut *out) {
 	strcpy(out->buffers.output.asmOutBuffer, out->buffers.externals);
 	strcat(out->buffers.output.asmOutBuffer, out->buffers.functions);
 	strcat(out->buffers.output.asmOutBuffer, out->buffers.variables);
+	strcat(out->buffers.output.asmOutBuffer, getWellVersionIdent().data);
 }
 
 void convertToAsm(AsmOut *out) {

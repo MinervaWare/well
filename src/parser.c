@@ -494,6 +494,7 @@ void parseInstruction(Function *func, char *line, Instruction *ins) {
 	if(!line||!ins) return;
 	disectInstructionName(ins);
 	getInstructionArguments(ins);
+	ins->funName = func->funName;
 }
 
 /* * * * *
