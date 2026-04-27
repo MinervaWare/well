@@ -3,7 +3,7 @@
 <div align="center">
   <br />
   <p>
-    <a href="https://github.com/wellang/wellang.git"><img src="https://github.com/wellang/well/blob/main/wellang.png" width="800" alt="wellang" /></a>
+    <a href="https://github.com/wellang/wellang.git"><img src="https://www.minervaware.net/_app/immutable/assets/wellang.Bu2wDHtA.png" width="800" alt="wellang" /></a>
   </p>
   <br />
   <p>
