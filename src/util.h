@@ -13,6 +13,8 @@
 #include <dirent.h>
 #include <ctype.h>
 #include <chash.h>
+#include "log10.h"
+#include "osname.h"
 
 #if defined(__clang__)
 #	ifndef __INT32_TYPE__
@@ -28,10 +30,18 @@ typedef long int int64_t;
 typedef unsigned long int uint64_t;
 #	endif
 #else
+#	ifndef __S32_TYPE
 typedef int int32_t;
+#	endif
+#	ifndef __U32_TYPE
 typedef unsigned int uint32_t;
+#	endif
+#	ifndef __S64_TYPE
 typedef long int int64_t;
+#	endif
+#	ifndef __U64_TYPE
 typedef unsigned long int uint64_t;
+#	endif
 #endif
 
 #define WLOG(logLevel, _str) \
@@ -299,7 +309,7 @@ _W_PRIVATE void _wFmtInt(wString *string, int i) {
 	int j = i;
 	wString res;
 	if(i==0) digits = 1;
-	else digits = (int)log10(abs(i))+1;
+	else digits = (int)wLog10(abs(i))+1;
 	res = wInitString(MAXOUTLEN);
 	if(i<0) {
 		char n = '-';
@@ -330,12 +340,11 @@ _W_PRIVATE void _wCFmtStr(wString *string, char *s) {
 
 /*@TODO handle floats and maybe some stadard wellang structs or something.*/
 _W_PRIVATE wString wCFmt(char *fmt, ...) {
-	int i, fmtSize = _wGetCStrSize(fmt), percents = 0;
+	int i, fmtSize = _wGetCStrSize(fmt);
 	wString res = wInitString(fmtSize);
 	va_list args;
 	wAssign(&res, "\0");
 	
-	for(i=0;i<fmtSize;i++) {if(fmt[i]=='%') percents++;}
 	va_start(args, fmt);
 	for(i=0;i<fmtSize-1;i++) {
 		char c = fmt[i];

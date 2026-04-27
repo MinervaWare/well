@@ -3,7 +3,7 @@
 <div align="center">
   <br />
   <p>
-    <a href="https://github.com/wellang/wellang.git"><img src="https://github.com/wellang/well/blob/main/wellang.png" width="800" alt="wellang" /></a>
+    <a href="https://github.com/wellang/wellang.git"><img src="https://www.minervaware.net/_app/immutable/assets/wellang.Bu2wDHtA.png" width="800" alt="wellang" /></a>
   </p>
   <br />
   <p>
@@ -34,8 +34,8 @@ This is the list of actively maintained architectures for Wellang. This does not
 * [x] POWERPC (ppc64, tested with the Cell Power4) 
 * [ ] RS6000 (POWER)
 * [ ] SPARC
-* [ ] SZ_IBM (s390)
-* [ ] MIPS (Mips32r2el)
+* [ ] SZ_IBM (s390 31-bit Z/VM 4.4)
+* [x] MIPS (mips32r2el)
 * [ ] HPPA
 
 ### NEED HELP?

@@ -62,6 +62,7 @@ typedef struct {
 } Scope;
 
 typedef struct {
+	char *funName; /*parent*/
 	char *line; /* move~ 1, r */
 	char *instruction; /* move */
 	char **arguments; /* ["1", "r1"] */

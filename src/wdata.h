@@ -7,6 +7,8 @@
 #include "cpu.h"
 #include "../include/argparse.h"
 
+#define WELLANG_VERSION "0.0.0"
+
 typedef struct {
 	FILE *main;
 	char *fileName;

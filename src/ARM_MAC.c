@@ -99,6 +99,7 @@ void ARM_MACGetLVAlloc(char *buf, int bSize, Variable *var) {
 					}
 					break;
 		}
+		case ANY: break;
 	};
 }
 
@@ -168,6 +169,7 @@ char *ARM_MACgetCurrentVar(struct parserData *parser, Instruction *ins, int argS
 			case FLOAT: res = wCFmt("wl_fl_%s", ins->arguments[argSpot]);break;
 			case VOID: /*TODO*/break;
 			case PTR: res = wCFmt("wl_z_%s", ins->arguments[argSpot]);break;
+			case ANY: break;
 		};
 	} else {
 		v = NULL;
@@ -330,7 +332,7 @@ void insertDefaultMappedArm3Instruction(char *outBuf, int outlen,
 		char *s1 = mapRegister(ins->arguments[1]);
 		char *s2 = mapRegister(ins->arguments[2]);
 		snprintf(outBuf, sizeof(char)*outlen, "\t%s %s, %s, %s\n",
-				instruction, dest, s1, s2, dest, dest);
+				instruction, dest, s1, s2);
 	}
 }
 
@@ -615,7 +617,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 				char *s2 = mapRegister(ins.arguments[2]);
 				snprintf(outBuf, sizeof(char)*outlen, 
 						"\tsdiv %s, %s, %s\n\tmul %s, %s, %s\n\tsub %s, %s, %s\n",
-						dest, s1, s2, dest, dest, dest, dest, s2, dest, s1, dest);
+						dest, s1, s2, dest, dest, dest, dest, s2, dest);
 			}
 		}
 

@@ -1,44 +1,61 @@
-	.section	".opd","aw"
+	.text
+	.align 2
 	.global print
-	.align 3
+	.set nomips16
+	.set nomicromips
+	.ent print
 print:
-	.quad .wl_print,.TOC.@tocbase, 0
-	.section	".text"
-.wl_print:
-	mflr 0
-	std 0,16(1)
-	std 31,-8(1)
-	stdu 1,-128(1)
-	mr 31,1
-	bl printf
+	.set noreorder
+	.cpload $25
+	addiu $sp,$sp,-32
+	sw $31,28($sp)
+	sw $fp,24($sp)
+	move $fp,$sp
+	.cprestore 16
+	lw $25,%call16(printf)($28)
+	.reloc 1f,R_MIPS_JALR,printf
+1:	jalr $25
 	nop
-	mr 9,3
-	addi 1,31,128
-	ld 0,16(1)
-	mtlr 0
-	ld 31,-8(1)
-	blr
-	.section	".opd","aw"
+	lw $28,16($fp)
+	move $sp,$fp
+	lw $31,28($sp)
+	lw $fp,24($sp)
+	addiu $sp,$sp,32
+	jr $31
+	nop
+	.end print
+	ret
+	.text
+	.align 2
 	.global main
-	.align 3
+	.set nomips16
+	.set nomicromips
+	.ent main
 main:
-	.quad .wl_main,.TOC.@tocbase, 0
-	.section	".text"
-.wl_main:
-	mflr 0
-	std 0,16(1)
-	std 31,-8(1)
-	stdu 1,-128(1)
-	mr 31,1
-	addis 3,2,wl_str_text@toc@ha
-	addi 3,3,wl_str_text@toc@l
-	bl print
+	.set noreorder
+	.cpload $25
+	addiu $sp,$sp,-32
+	sw $31,28($sp)
+	sw $fp,24($sp)
+	move $fp,$sp
+	.cprestore 16
+	lw $4,%got(wl_str_text)($28)
+	addiu $4,$4,%lo(wl_str_text)
+	lw $25,%ot(print)($28)
+	.reloc 1f,R_MIPS_JALR,print
+1:	jalr $25
 	nop
-	li 3,0
-	addi 1,31,128
-	ld 0,16(1)
-	mtlr 0
-	ld 31,-8(1)
-	blr
+	lw $28,16($fp)
+	move $2,$4
+	move $sp,$fp
+	lw $31,28($sp)
+	lw $fp,24($sp)
+	addiu $sp,$sp,32
+	jr $31
+	nop
+	.end main
+	.rdata
+	.align 2
 wl_str_text:
 	.asciz "Hello World!\n"
+	.ident "Well: (Mac OS X) 0.0.0"

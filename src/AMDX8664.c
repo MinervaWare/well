@@ -50,17 +50,18 @@ void AMD_X86_64GetLVAlloc(char *buf, size_t bSize, Variable *var) {
 							   (int)value[0], offset);
 					   break;
 			case STRING: snprintf(buf, bSize,
-								 "\tmovq wl_str_%s(%%rip), %r10\n"
-								 "\tmovq %r10, -%d(%%rbp)\n",
+								 "\tmovq wl_str_%s(%%rip), %%r10\n"
+								 "\tmovq %%r10, -%d(%%rbp)\n",
 								 vName, offset); 
 						break;
 			case FLOAT: snprintf(buf, bSize,
-							  "\tmovss wl_fl_%s(%%rip), %xmm7\n"
-							  "\tmovss %xmm7, -%d(%%rbp)\n",
+							  "\tmovss wl_fl_%s(%%rip), %%xmm7\n"
+							  "\tmovss %%xmm7, -%d(%%rbp)\n",
 							  vName, offset);
 						break;
 			case VOID: break;
 			case PTR: break;
+			case ANY: break;
 		};
 	} else if(CPU==I386) {
 		switch(var->type) {
@@ -82,6 +83,7 @@ void AMD_X86_64GetLVAlloc(char *buf, size_t bSize, Variable *var) {
 						break;
 			case VOID: break;
 			case PTR: break;
+			case ANY: break;
 		};
 	}
 }
@@ -148,6 +150,7 @@ char *getCurrentVar(struct parserData *parser, Instruction *ins, int argSpot) {
 			case FLOAT: res = wCFmt("wl_fl_%s", ins->arguments[argSpot]);break;
 			case VOID: /*TODO*/break;
 			case PTR: res = wCFmt("wl_z_%s", ins->arguments[argSpot]);break;
+			case ANY: break;
 		};
 		if(CPU==AMD_X86_64) wCAppend(&res, "(%rip)");
 	} else {

@@ -364,6 +364,7 @@ int LVTGetOffsetSize(enum varTypes type) {
 		case FLOAT: return sizeof(float);
 		case VOID: return 4;
 		case PTR: return 8;
+		case ANY: return 0;
 	};	
 	return 0;
 }
@@ -494,6 +495,7 @@ void parseInstruction(Function *func, char *line, Instruction *ins) {
 	if(!line||!ins) return;
 	disectInstructionName(ins);
 	getInstructionArguments(ins);
+	ins->funName = func->funName;
 }
 
 /* * * * *

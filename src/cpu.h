@@ -76,7 +76,8 @@ static enum cpuType CPU =
 		case SPARC: str="SPARC";break; \
 		case SZ_IBM: str="System/370-90";break; \
 		case MIPS: str="MIPS";break; \
-		case HPPA: str="HPPA";break;};
+		case HPPA: str="HPPA";break; \
+		case SPU: str="SPU";break;};
 
 #define SETCPUENUM(_str) { \
 		if(!strcmp(_str, "ALPHA")) CPU = ALPHA; \
@@ -90,6 +91,7 @@ static enum cpuType CPU =
 		else if(!strcmp(_str, "SPARC")) CPU = SPARC; \
 		else if(!strcmp(_str, "SZ_IBM")) CPU = SZ_IBM; \
 		else if(!strcmp(_str, "MIPS")) CPU = MIPS; \
-		else if(!strcmp(_str, "HPPA")) CPU = HPPA;} 
+		else if(!strcmp(_str, "HPPA")) CPU = HPPA; \
+		else if(!strcmp(_str, "SPU")) CPU = SPU; } 
 
 #endif
