@@ -5,7 +5,7 @@
 
 char *stackAllocateMIPS32(enum cpuType cpu) {
 	wString ret = wInitString(1024);
-	CPU = CPU;
+	CPU = cpu;
 	wAssign(&ret, "\t.set noreorder\n\t.cpload $25\n");
 	wCAppend(&ret, "\taddiu $sp,$sp,-32\n\tsw $31,28($sp)\n");
 	wCAppend(&ret, "\tsw $fp,24($sp)\n\tmove $fp,$sp\n\t.cprestore 16\n");
@@ -54,6 +54,7 @@ char *MIPS32GetCurrentVar(struct parserData *parser, Instruction *ins, int argSp
 			case FLOAT: res = wCFmt("wl_fl_%s", ins->arguments[argSpot]);break;
 			case VOID: /*@TODO*/break;
 			case PTR: res = wCFmt("wl_z_%s", ins->arguments[argSpot]);break;
+			case ANY: break;
 		};
 	} else {
 		/*@TODO*/

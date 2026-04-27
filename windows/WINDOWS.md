@@ -1,3 +1,0 @@
-# Compiling Wellang on Windows
-
-Todo...

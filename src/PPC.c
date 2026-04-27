@@ -52,6 +52,7 @@ void PPCGetLVTAlloc(char *buf, size_t bSize, Variable *var) {
 		case FLOAT: break;
 		case VOID: break;
 		case PTR: break;
+		case ANY: break;
 	};
 }
 
@@ -90,6 +91,7 @@ char *getCurrentVarPPC(struct parserData *parser, Instruction *ins, int argSpot)
 			case VOID: /*TODO*/break;
 			case PTR: snprintf(asmVName, sizeof(asmVName), 
 							   "wl_z_%s", ins->arguments[argSpot]);break;
+			case ANY: break;
 		};
 	} else {
 		v = NULL;

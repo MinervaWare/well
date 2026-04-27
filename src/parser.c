@@ -364,6 +364,7 @@ int LVTGetOffsetSize(enum varTypes type) {
 		case FLOAT: return sizeof(float);
 		case VOID: return 4;
 		case PTR: return 8;
+		case ANY: return 0;
 	};	
 	return 0;
 }

@@ -340,12 +340,11 @@ _W_PRIVATE void _wCFmtStr(wString *string, char *s) {
 
 /*@TODO handle floats and maybe some stadard wellang structs or something.*/
 _W_PRIVATE wString wCFmt(char *fmt, ...) {
-	int i, fmtSize = _wGetCStrSize(fmt), percents = 0;
+	int i, fmtSize = _wGetCStrSize(fmt);
 	wString res = wInitString(fmtSize);
 	va_list args;
 	wAssign(&res, "\0");
 	
-	for(i=0;i<fmtSize;i++) {if(fmt[i]=='%') percents++;}
 	va_start(args, fmt);
 	for(i=0;i<fmtSize-1;i++) {
 		char c = fmt[i];

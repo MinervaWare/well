@@ -73,7 +73,7 @@ char *dumpInlineASM(Instruction *ins) {
 char *getCPUMain() {
 	wString ret = wInitString(10);
 	/*I know this is redundant,
-	 * I still need to go through different compilers and sort the main per compiler, not CPU.*/
+	 * I still need to go through different compilers and sort the entry per compiler/OS, not CPU.*/
 	switch(CPU) {
 		case ARMv8: wAssign(&ret, "main"); break;
 		case ARM_MAC: wAssign(&ret, "_main"); break;
@@ -88,6 +88,7 @@ char *getCPUMain() {
 		case SPARC: wAssign(&ret, "main"); break;
 		case MIPS: wAssign(&ret, "main"); break;
 		case HPPA: wAssign(&ret, "main"); break;
+		case SPU: wAssign(&ret, "main"); break;
 	}
 	return ret.data;
 }
@@ -136,6 +137,7 @@ char *createFunctionHeader(char *name) {
 			   break; 
 		}
 		case HPPA: break; /*TODO*/
+		case SPU: break; /*TODO*/
 	};
 	if(isEntryPoint(name)) {
 		if(CPU==ALPHA) wCAppend(&head, "\tldgp $29, 0($27)\n");
@@ -180,7 +182,7 @@ char *getLVTAllocation(Function *func) {
 				case SPARC: break; /*TODO*/
 				case MIPS: break; /*TODO*/
 				case HPPA: break; /*TODO*/
-
+				case SPU: break; /*TODO*/
 			};
 			if(res==NULL) {
 				res = calloc(strlen(buf)+1, sizeof(char));
@@ -246,6 +248,7 @@ char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 				case MIPS: asmInstruction = convertInstructionMIPS32(out, *curIns); 
 					   break; 
 				case HPPA: break; /*TODO*/
+				case SPU: break; /*TODO*/
 			};
 			if(asmInstruction!=NULL) {
 				bufferSize += strlen(asmInstruction)+1;	
@@ -292,6 +295,7 @@ char *getStackAllocation() {
 		case SPARC: break; /*TODO*/
 		case MIPS: return stackAllocateMIPS32(CPU);
 		case HPPA: break; /*TODO*/
+		case SPU: break; /*TODO*/
 	};
 	return NULL;
 }
@@ -343,6 +347,7 @@ void convertFunctions(AsmOut *out) {
 				case MIPS: asmInstruction = convertInstructionMIPS32(out, *curIns); 
 					   break;
 				case HPPA: break; /*TODO*/
+				case SPU: break; /*TODO*/
 			};
 			if(asmInstruction!=NULL&&strcmp(asmInstruction, "")) {
 				bufferSize+=strlen(asmInstruction)+
@@ -386,6 +391,7 @@ void convertFunctions(AsmOut *out) {
 				case MIPS: deallocateStack = 
 					   stackDeallocateMIPS32(out->parser->functions[i].funName);break;
 				case HPPA: break; /*TODO*/
+				case SPU: break; /*TODO*/
 			};
 			if(CPU!=POWERPC) {
 				if(deallocateStack!=NULL) strcat(deallocateStack, "\tret\n");
@@ -437,6 +443,7 @@ char *getAsmString(char *name, char *value) {
 		case MIPS: res = wCFmt("\t.rdata\n\t.align 2\nwl_str_%s:\n"
 					   "\t.asciz %s\n", name, value);break; 
 		case HPPA: break; /*TODO*/
+		case SPU: break; /*TODO*/
 	};
 	return res.data;
 }
@@ -528,6 +535,7 @@ void convertVariables(AsmOut *out) {
 			case CHAR: asmVar = getAsmChar(curName, curValue);break;
 			case VOID: /*TODO*/break;
 			case PTR: asmVar = getAsmPtr(curName, curValue);
+			case ANY: break;
 		};
 		if(asmVar!=NULL) {
 			totalSize += strlen(asmVar);
