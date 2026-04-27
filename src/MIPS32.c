@@ -14,9 +14,10 @@ char *stackAllocateMIPS32(enum cpuType cpu) {
 
 char *stackDeallocateMIPS32(char *funName) {
 	wString ret = wInitString(1024);
-	wCAppend(&ret, "\tmove $sp,$fp\n\tlw $31,28($sp)\n");
+	wAssign(&ret, "\tmove $sp,$fp\n\tlw $31,28($sp)\n");
 	wCAppend(&ret, "\tlw $fp,24($sp)\n\taddiu $sp,$sp,32\n");
 	wCAppend(&ret, wCFmt("\tjr $31\n\tnop\n\t.end %s\n", funName).data);
+	return ret.data;
 }
 
 void MIPS32GetLVAlloc(char *buf, int bsize, Variable *var) {
@@ -37,6 +38,50 @@ char *mapRegisterMIPS32(char *reg) {
 		case MIP32SP: return "$sp";
 	};
 	return "$4";
+}
+
+char *MIPS32GetCurrentVar(struct parserData *parser, Instruction *ins, int argSpot) {
+	wString res;
+	Variable *v = NULL;
+	res.data = NULL; res.count = 0;
+	if(parser==NULL||ins==NULL) return NULL;
+	v = getVarFrom(parser, ins->arguments[argSpot]);
+	if(v!=NULL) {
+		switch(v->type) {
+			case STRING: res = wCFmt("wl_str_%s", ins->arguments[argSpot]);break;
+			case CHAR: res = wCFmt("wl_ch_%s", ins->arguments[argSpot]);break;
+			case INT: res = wCFmt("wl_int_%s", ins->arguments[argSpot]);break;
+			case FLOAT: res = wCFmt("wl_fl_%s", ins->arguments[argSpot]);break;
+			case VOID: /*@TODO*/break;
+			case PTR: res = wCFmt("wl_z_%s", ins->arguments[argSpot]);break;
+		};
+	} else {
+		/*@TODO*/
+	}
+	return res.data;
+}
+
+wString MIPS32GetMoveInstructions(struct parserData *parser, Instruction *ins,
+		char *val1, char *val2) {
+	wString res;
+	Variable *var = getVarFrom(parser, ins->arguments[0]);
+	res.data = NULL; res.count = 0;
+	if(var) {
+		if(var->varName!=NULL) {
+			switch(var->type) {
+				case CHAR:
+				case INT: res = wCFmt("\tlw %s,% got(%s)($28)\n\tlw %s,0(%s)\n",
+							   val2, val1, val2, val2);break;
+				case STRING: res = wCFmt("\tlw %s,% got(%s)($28)\n\taddiu %s,%s,% lo(%s)\n",
+							     val2, val1, val2, val2, val1);
+				case FLOAT: break;
+				default: break;
+			};
+		}
+	} else {
+		/*@TODO locals*/
+	}
+	return res;
 }
 
 char *convertInstructionMIPS32(AsmOut *out, Instruction ins) {
@@ -99,6 +144,29 @@ char *convertInstructionMIPS32(AsmOut *out, Instruction ins) {
 								ins.arguments[0], dealloc).data);
 				}
 			}	
+		}
+	
+	/*
+	 * 2 argument instructions
+	 * */
+	} else if(args==2) {
+		if(!strcmp(ins.instruction, "move")) {
+			char *val1 = NULL;
+			char *val2 = NULL;
+			wString mov;
+			mov.data = NULL; mov.count = 0;
+			if(checkRegister(ins.arguments[0])) {
+				val1 = mapRegisterMIPS32(ins.arguments[0]);
+			} else {
+				val1 = MIPS32GetCurrentVar(out->parser, &ins, 0);
+			}
+			if(checkRegister(ins.arguments[1])) {
+				val2 = mapRegisterMIPS32(ins.arguments[1]);
+			} else {
+				val1 = MIPS32GetCurrentVar(out->parser, &ins, 1);
+			}
+			mov = MIPS32GetMoveInstructions(out->parser, &ins, val1, val2);
+			wAppend(&outBuf, &mov);
 		}
 	}
 
