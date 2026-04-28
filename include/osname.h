@@ -3,7 +3,7 @@
 
 /*
  * Modified by Tristan Wellman -  9/29/25
- * Fix the __MACH typo
+ * Fix the __MACH typo, Fix __VM__ and __MVS__ redefs on same-def systems.
  * */
 
 /* C-Ware License
@@ -274,19 +274,14 @@
 #ifdef __VM__
 #    define OSNAME "VM/CMS"
 #    define OSCLASS OS_S370
-#endif
-
-#ifdef __MVS__
+#elif defined(__MVS__)
 #    define OSNAME "MVS"
 #    define OSCLASS OS_S370
-#endif
-
-#ifdef __EDC_LE
+#elif defined(__EDC_LE)
 #    ifndef __VM__
 #        define OSNAME "VSE"
 #        define OSCLASS OS_S370
-#    endif
-#    ifndef __MVS__
+#    elif defined( __MVS__)
 #        define OSNAME "VSE"
 #        define OSCLASS OS_S370
 #    endif

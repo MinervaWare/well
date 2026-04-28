@@ -13,30 +13,36 @@
 
 say ' - - Copyright (c) 2024-2026 MinervaWare LLC - -'
 say ' - - Copyright (c) 2022-2024 Tristan Wellman - -'
-say ' - - 		Compiling Wellang for Z/VM 		  - -'
+say ' - -       Compiling Wellang for Z/VM        - -'
+
+bin = 'WELL'
 
 src. = ''
-	src.1 = 'ALPHA'
-	src.2 = 'AMDX8664'
-	src.3 = 'ARM_MAC'
-	src.4 = 'ARMv7'
-	src.5 = 'asmout'
-	src.6 = 'main'
-	src.7 = 'MIPS32'
-	src.6 = 'parser'
-	src.8 = 'PPC'
-	src.9 = 'util'
-	src.9 = 'extract'
-	src.10 = 'ap_inter'
-	src.11 = 'argparse'
+src.1 = 'ALPHA'
+src.2 = 'AMDX8664'
+src.3 = 'ARM_MAC'
+src.4 = 'ARMv7'
+src.5 = 'asmout'
+src.6 = 'main'
+src.7 = 'MIPS32'
+src.6 = 'parser'
+src.8 = 'PPC'
+src.9 = 'util'
+src.10 = 'extract'
+src.11 = 'ap_inter'
+src.12 = 'argparse'
 
 args = ''
 
 do i=1 while src.i <> ''
-	'CC' src.i '(LONGNAME'
-	args = args src.i
-	say '    CC' src.i
+say '    CC' src.i
+'CC' src.i '(LONGNAME'
+args = args src.i
 end
 
+say 'CPLINK' args
 'CPLINK' args
-'GENMOD CPOBJ'
+say 'LOAD CPOBJ'
+'LOAD CPOBJ'
+say 'GENMOD' bin
+'GENMOD' bin
