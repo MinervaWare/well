@@ -13,7 +13,6 @@
 #include <dirent.h>
 #include <ctype.h>
 #include <chash.h>
-#include "log10.h"
 #include "osname.h"
 
 #if defined(__clang__)
@@ -156,6 +155,15 @@ _W_PRIVATE _W_HOT char *floatToHex(char *value) {
 	res = calloc(strlen(value)+1024, sizeof(int));
 	sprintf(res, "0x%x", convVal);
 	return res;
+}
+
+/*because fuck the log10 shift magic fucking up old hardware*/
+_W_PRIVATE int wGetDigits(int val) {
+	int digits = 0;
+	int n = abs(val);
+	if(!n) return 1;
+	for(;n>0;digits++) n /= 10;
+	return digits;
 }
 
 /*C char ptr utilities*/
@@ -308,8 +316,7 @@ _W_PRIVATE void _wFmtInt(wString *string, int i) {
 	char *cursor = NULL;
 	int j = i;
 	wString res;
-	if(i==0) digits = 1;
-	else digits = (int)wLog10(abs(i))+1;
+	digits = wGetDigits(i);
 	res = wInitString(MAXOUTLEN);
 	if(i<0) {
 		char n = '-';
