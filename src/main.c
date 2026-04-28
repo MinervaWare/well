@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 
 	end = clock();
 	GETCPUSTR(CPU, cpuStr);
-	snprintf(timeBuf, sizeof(timeBuf), "Compile time: %fs, %fms on %s", 
+	sprintf(timeBuf, "Compile time: %fs, %fms on %s", 
 			((double)(end-start) / CLOCKS_PER_SEC), 
 			(((double)(end-start) / CLOCKS_PER_SEC) * 1000), cpuStr);
 	WLOG(INFO, timeBuf);
@@ -194,7 +194,7 @@ void initArgParseArgs(wData *data, int argc, char **argv) {
 			char *buf;
 			data->main = fopen(argv[i], "r");
 			buf = calloc(128, sizeof(char));
-			snprintf(buf, sizeof(char)*128, "FATAL:: Failed to open file: %s", argv[i]);
+			sprintf(buf, "FATAL:: Failed to open file: %s", argv[i]);
 			WASSERT(data->main!=NULL, buf);
 			data->fileName = argv[i];
 			free(buf);
@@ -254,7 +254,7 @@ void compileFile(wData *data) {
 	if(data->USELD) return;
 	if(data->outputFile!=NULL) {
 		char buf[256];
-		snprintf(buf, sizeof(buf), "-o%s", data->outputFile);
+		sprintf(buf, "-o%s", data->outputFile);
 		data->outputFile = calloc(strlen(buf)+1, sizeof(char *));
         strcpy(data->outputFile, buf);
 	}
@@ -272,7 +272,7 @@ void compileFile(wData *data) {
 		for(i=0;i<ARRLEN(args)-1;i++) {
 			char str[100];
 			if(args[i]==NULL) break;
-			snprintf(str, sizeof(str), "%s ", args[i]);
+			sprintf(str, "%s ", args[i]);
 			strcat(buf, str);
 		}
 		WLOG(INFO, buf);
@@ -297,7 +297,7 @@ args[1] = calloc(strlen(data->includedFiles[i])+1, sizeof(char *));
 				for(j=0;j<ARRLEN(args)-1;j++) {
 					char str[100];
 					if(args[i]==NULL) break;
-					snprintf(str, sizeof(str), "%s ", args[j]);
+					sprintf(str, "%s ", args[j]);
 					strcat(buf, str);
 				}
 				WLOG(INFO, buf);
@@ -345,7 +345,7 @@ args[1] = calloc(strlen(data->includedFiles[i])+1, sizeof(char *));
 			for(j=0;linkArgs[j]!=NULL;j++) {
 				char str[100];
 				if(linkArgs[j]==NULL) break;
-				snprintf(str, sizeof(str), "%s ", linkArgs[j]);	
+				sprintf(str, "%s ", linkArgs[j]);	
 				strcat(buf, str);
 			}
 			WLOG(INFO, buf);

@@ -58,3 +58,4 @@ wl_str_testLocal:
 	.asciz "I am the Walrus\n"
 wl_str_sw:
 	.asciz "a: %d, b: %d\n"
+	.ident "Well: (Mac OS X) 0.0.0"

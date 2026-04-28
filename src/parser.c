@@ -114,7 +114,7 @@ void dumpScopes(struct parserData *parser) {
 	for(i=0;i<MAXSCOPES;i++) {
 		char buffer[100];
 		if(parser->scopes[i].scopeName==NULL) break;
-		snprintf(buffer, sizeof(buffer), 
+		sprintf(buffer, 
 				"%s : %s : %s",
 				getWT(parser->scopes[i].scopeType), 
 				parser->scopes[i].scopeName,
@@ -565,7 +565,7 @@ void getIfStateOp(char *line, Instruction *ins) {
 	for(i=0;strlen(cpy)>=2;cpy++,i++) {
 		if(isChIfStateOp(cpy[0])&&
 				isChIfStateOp(cpy[1])) {
-			snprintf(tmp, IFOPALLOCS*sizeof(char), "%c%c", 
+			sprintf(tmp, "%c%c", 
 					cpy[0], cpy[1]);
 			break;
 		}
@@ -667,10 +667,10 @@ void startFunctionSubScope(Function *func, char *data, int lineNum) {
 	func->subScopes[func->totalScopes].scope.scopeType = getScopeType(data);
 	func->subScopes[func->totalScopes].scope.lineNum = lineNum;
 	switch(func->subScopes[func->totalScopes].scope.scopeType) {
-		case IFSTATE: snprintf(buf, sizeof(buf), "wl_%s_is_%d%d", 
+		case IFSTATE: sprintf(buf, "wl_%s_is_%d%d", 
 							  func->funName, func->totalScopes, lineNum); 
 					  break;
-		case LOOP: snprintf(buf, sizeof(buf), "wl_%s_lop_%d%d", 
+		case LOOP: sprintf(buf, "wl_%s_lop_%d%d", 
 						   func->funName, func->totalScopes, lineNum);
 				   break;
 		default: break;
@@ -1058,7 +1058,7 @@ void getIncludedFiles(struct parserData *parser) {
 					strcpy(data->fileName, included);
 
 					erbuf = calloc(256, sizeof(char));
-					snprintf(erbuf, sizeof(char)*256, 
+					sprintf(erbuf, 
 							"FATAL:: Failed to open file: %s", included);
 					WASSERT(data->main!=NULL, erbuf);
 					free(erbuf);

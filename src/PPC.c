@@ -15,22 +15,21 @@
 #include "PPC.h"
 
 char *stackAllocatePPC(enum cpuType cpu) {
-	char *ret;
+	wString ret = wInitString(1024);
 	CPU = cpu;
-	ret = calloc(1024, sizeof(char));
-	snprintf(ret, 1024*sizeof(char),
+	wAssign(&ret,
 			"\tmflr 0\n\tstd 0,16(1)\n"
 			"\tstd 31,-8(1)\n\tstdu 1,-128(1)\n"
 			"\tmr 31,1\n");
-	return ret;
+	return ret.data;
 }                                                                           
 
 char *stackDeallocatePPC() {
-	char *ret = calloc(1024, sizeof(char));
-	snprintf(ret, 1024*sizeof(char),
+	wString ret = wInitString(1024);
+	wAssign(&ret,
 			"\taddi 1,31,128\n\tld 0,16(1)\n"
 			"\tmtlr 0\n\tld 31,-8(1)\n\tblr\n");
-	return ret;
+	return ret.data;
 }                                                                                        
 
 void PPCGetLVTAlloc(char *buf, size_t bSize, Variable *var) {
@@ -39,11 +38,11 @@ void PPCGetLVTAlloc(char *buf, size_t bSize, Variable *var) {
 	int offset = var->offset;
 	switch(var->type) {
 		case CHAR:
-		case INT: snprintf(buf, bSize, 
+		case INT: sprintf(buf, 
 					  "\tli 11,%s\n\tstd 11,%d(31)\n",
 					  value, offset+PPC64RESERVEDGPOFFSET);
 			  break;
-		case STRING: snprintf(buf, bSize,
+		case STRING: sprintf(buf,
 					     "\taddis 11,2,wl_str_%s@toc@ha\n"
 					     "\taddi 11,11,wl_str_%s@toc@l\n"
 					     "\tstd 11,%d(31)\n",
@@ -80,16 +79,16 @@ char *getCurrentVarPPC(struct parserData *parser, Instruction *ins, int argSpot)
 	v = getVarFrom(parser, ins->arguments[argSpot]);
 	if(v!=NULL) {
 		switch(v->type) {
-			case STRING: snprintf(asmVName, sizeof(asmVName),
+			case STRING: sprintf(asmVName,
 								 "wl_str_%s", ins->arguments[argSpot]);break;
-			case CHAR: snprintf(asmVName, sizeof(asmVName),
+			case CHAR: sprintf(asmVName,
 							   "wl_ch_%s", ins->arguments[argSpot]);break;
-			case INT: snprintf(asmVName, sizeof(asmVName),
+			case INT: sprintf(asmVName,
 							  "wl_int_%s", ins->arguments[argSpot]);break;
-			case FLOAT: snprintf(asmVName, sizeof(asmVName),
+			case FLOAT: sprintf(asmVName,
 								"wl_fl_%s", ins->arguments[argSpot]);break;
 			case VOID: /*TODO*/break;
-			case PTR: snprintf(asmVName, sizeof(asmVName), 
+			case PTR: sprintf(asmVName, 
 							   "wl_z_%s", ins->arguments[argSpot]);break;
 			case ANY: break;
 		};
@@ -97,8 +96,8 @@ char *getCurrentVarPPC(struct parserData *parser, Instruction *ins, int argSpot)
 		v = NULL;
 		v = queryLocalVariable(parser, ins->lineNum, ins->arguments[argSpot]);
 		/*local var or immediate val*/
-		if(v!=NULL) snprintf(asmVName, sizeof(asmVName), "%d(31)", v->offset+PPC64RESERVEDGPOFFSET);
-		else snprintf(asmVName, sizeof(asmVName), "%s", ins->arguments[argSpot]);
+		if(v!=NULL) sprintf(asmVName, "%d(31)", v->offset+PPC64RESERVEDGPOFFSET);
+		else sprintf(asmVName, "%s", ins->arguments[argSpot]);
 	}
 	res = calloc(strlen(asmVName)+1, sizeof(char));
 	strcpy(res, asmVName);
@@ -113,19 +112,19 @@ char *PPCGetMoveInstructions(struct parserData *parser, Instruction *ins,
 	if(var) {
 		if(var->varName!=NULL) {
 			switch(var->type) {
-				case INT: snprintf(outBuf, sizeof(outBuf), 
+				case INT: sprintf(outBuf, 
 					  	"\taddis %s,2,%s@toc@ha\n\taddi %s,%s,%s@toc@l\n",
 					  	val2, val1, val2, val2, val1);
 					  break;
-				case CHAR: snprintf(outBuf, sizeof(outBuf),
+				case CHAR: sprintf(outBuf,
 					   	"\taddis %s,2,%s@toc@ha\n\taddi %s,%s,%s@toc@l\n",
 						val2, val1, val2, val2, val1);
 					   break;
-				case STRING: snprintf(outBuf, sizeof(outBuf),
+				case STRING: sprintf(outBuf,
 					     	"\taddis %s,2,%s@toc@ha\n\taddi %s,%s,%s@toc@l\n",
 						val2, val1, val2, val2, val1);
 				case FLOAT: break;
-				default: snprintf(outBuf, sizeof(outBuf),
+				default: sprintf(outBuf,
 						"\taddis %s,2,%s@toc@ha\n\taddi %s,%s,%s@toc@l\n",
 						val2, val1, val2, val2, val1);
 					 break;
@@ -134,7 +133,7 @@ char *PPCGetMoveInstructions(struct parserData *parser, Instruction *ins,
 	} else {
 		var = queryLocalVariable(parser, ins->lineNum, ins->arguments[0]);
 		if(var!=NULL) {
-			snprintf(outBuf, sizeof(outBuf),
+			sprintf(outBuf,
 					"\tld %s,%d(31)\n", 
 					val2, var->offset+PPC64RESERVEDGPOFFSET);
 		} else {
@@ -142,16 +141,16 @@ char *PPCGetMoveInstructions(struct parserData *parser, Instruction *ins,
 					!checkRegister(ins->arguments[1])) {
 				var = queryLocalVariable(parser, ins->lineNum, ins->arguments[1]);
 				if(var!=NULL) {
-					snprintf(outBuf, sizeof(outBuf), 
+					sprintf(outBuf, 
 							"\tld %s,%d(31)\n", 
 							val1, var->offset+PPC64RESERVEDGPOFFSET);
 				}
 			} else if(checkRegister(ins->arguments[0])&&
 					checkRegister(ins->arguments[1])) {
-				snprintf(outBuf, sizeof(outBuf),
+				sprintf(outBuf,
 						"\tmr %s,%s\n", val2, val1);
 			} else {
-				snprintf(outBuf, sizeof(outBuf),
+				sprintf(outBuf,
 						"\tli %s,%s\n", val2, val1);
 			}
 		}
@@ -200,21 +199,21 @@ char *ifStateConvertPPC(AsmOut *out, Instruction *ins) {
 	local0 = queryLocalVariable(out->parser, ins->lineNum, ins->arguments[1]);
 	local1 = queryLocalVariable(out->parser, ins->lineNum, ins->arguments[2]);
 	if(local0!=NULL&&local1==NULL) {
-		snprintf(outBuf, sizeof(outBuf),
+		sprintf(outBuf,
 				"\tld 11,%d(31)\n\t%s 0,%s,%s\n"
 				"\t%s 0,.%s\n"
 				".%s_cont:\n",
 				local0->offset+PPC64RESERVEDGPOFFSET,
 				cmp, val2, "11", op, scopeName, scopeName);
 	} else if(local1!=NULL&&local0==NULL) {
-		snprintf(outBuf, sizeof(outBuf),
+		sprintf(outBuf,
 				"\tld 11,%d(31)\n\t%s 0,%s,%s\n"
 				"\t%s 0,.%s\n"
 				".%s_cont:\n",
 				local1->offset+PPC64RESERVEDGPOFFSET,
 				cmp, "11", val1, op, scopeName, scopeName);
 	} else {
-		snprintf(outBuf, sizeof(outBuf), 
+		sprintf(outBuf, 
 				"\t%s 0,%s,%s\n"
 				"\t%s 0,.%s\n"
 				".%s_cont:\n",
@@ -243,7 +242,7 @@ char *convertInstructionPPC(AsmOut *out, Instruction ins) {
 	/*Special instructions*/
 	/*Inline - Drops direct asm instructions into the output*/
 	if(!strcmp(ins.instruction, "inline")) { 
-		snprintf(outBuf, sizeof(char)*outlen, "\t%s\n", dumpInlineASM(&ins));
+		sprintf(outBuf, "\t%s\n", dumpInlineASM(&ins));
 
 	/*
 	 * 1 argument instructions
@@ -256,10 +255,10 @@ char *convertInstructionPPC(AsmOut *out, Instruction ins) {
 			if(ins.argLen>0 && ins.arguments[0]!=NULL) {
 				/*We have to move r3 to r9 for wl standard on external functions.*/
 				if(!doesFunctionExistInternal(out->parser, ins.arguments[0])) {
-					snprintf(outBuf, sizeof(char)*outlen,
+					sprintf(outBuf,
 							"\tbl %s\n\tnop\n\tmr 9,3\n", ins.arguments[0]);
 				} else {
-					snprintf(outBuf, sizeof(char)*outlen, "\tbl %s\n\tnop\n",
+					sprintf(outBuf, "\tbl %s\n\tnop\n",
 							ins.arguments[0]);
 				}
 			}
@@ -273,10 +272,10 @@ char *convertInstructionPPC(AsmOut *out, Instruction ins) {
 				if(strlen(ins.arguments[0])==0) ins.arguments[0] = "0";
 				else reg = mapRegisterPPC(ins.arguments[0]);
 				if(checkRegister(ins.arguments[0])) {
-					snprintf(outBuf, sizeof(char)*outlen,
+					sprintf(outBuf,
 							"\tmr 3,%s\n%s", reg, dealloc);
 				} else {
-					snprintf(outBuf, sizeof(char)*outlen,
+					sprintf(outBuf,
 							"\tli 3,%s\n%s", ins.arguments[0], dealloc);
 				}
 				free(dealloc);
@@ -332,7 +331,7 @@ char *convertInstructionPPC(AsmOut *out, Instruction ins) {
 		 * */
 		if(getIfStateCmpPPC(ins.instruction)!=NULL) {
 			char *conv = ifStateConvertPPC(out, &ins);
-			snprintf(outBuf, sizeof(char)*outlen, "%s", conv);
+			sprintf(outBuf, "%s", conv);
 			free(conv); conv = NULL;
 		}
 	}

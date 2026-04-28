@@ -60,7 +60,7 @@ char *dumpInlineASM(Instruction *ins) {
 	strcpy(out, ins->arguments[0]);
 	for(i=1;i<ins->argLen;i++) {
 		char buf[1024];
-		snprintf(buf, sizeof(buf), ", %s", ins->arguments[i]);
+		sprintf(buf, ", %s", ins->arguments[i]);
 		strcat(out, buf);
 	}
 	return out;
@@ -201,7 +201,7 @@ char *getLVTAllocation(Function *func) {
 char *getSubScopeHeader(FuncSubScopeData *subScope) {
 	int len = strlen(subScope->scope.scopeName)+1024;
 	char *res = calloc(len, sizeof(char));
-	snprintf(res, len*sizeof(char), ".%s:\n", subScope->scope.scopeName);	
+	sprintf(res, ".%s:\n", subScope->scope.scopeName);	
 	return res;
 }
 
@@ -260,15 +260,15 @@ char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 		ret = calloc(strlen(func->subScopes[i].scope.scopeName)+128, sizeof(char));
 		bufferSize += strlen(ret)+128;
 		switch(CPU) {
-			case AMD_X86_64: snprintf(ret, (strlen(ret)+128)*sizeof(char), 
+			case AMD_X86_64: sprintf(ret, 
 									 "\tjmp .%s_cont\n",
 									 func->subScopes[i].scope.scopeName);
 							 break;
-			case ARM_MAC: snprintf(ret, (strlen(ret)+128)*sizeof(char), 
+			case ARM_MAC: sprintf(ret, 
 									 "\tb .%s_cont\n",
 									 func->subScopes[i].scope.scopeName);
 						  break;
-			case POWERPC: snprintf(ret, (strlen(ret)+128)*sizeof(char),
+			case POWERPC: sprintf(ret,
 						      "\tbl .%s_cont\n",
 						      func->subScopes[i].scope.scopeName);
 			default: break;
@@ -457,10 +457,10 @@ char *getAsmChar(char *name, char *value) {
 	while(value[strlen(value)-1]=='\'') value[strlen(value)-1] = '\0';
 	nbLen = strlen(name)+100;
 	nameBuf = calloc(nbLen, sizeof(char));
-	snprintf(nameBuf, sizeof(char)*nbLen, "wl_ch_%s", name);
+	sprintf(nameBuf, "wl_ch_%s", name);
 	bLen = strlen(name)+strlen(value)+100;
 	buf = calloc(bLen, sizeof(char));
-	snprintf(buf, sizeof(char)*bLen,
+	sprintf(buf,
 			"\n\t.global %s\n%s:\n\t.byte %d\n",
 			nameBuf, nameBuf, value[0]);
 	ret = calloc(strlen(buf)+1, sizeof(char));
@@ -477,10 +477,10 @@ char *getAsmInt(char *name, char *value) {
 	char *ret;
 	char *buf;
 	char *nameBuf = calloc(nbLen, sizeof(char));
-	snprintf(nameBuf, sizeof(char)*nbLen, "wl_int_%s", name);
+	sprintf(nameBuf, "wl_int_%s", name);
 	bLen = strlen(nameBuf)+strlen(hexValue)+100;
 	buf = calloc(bLen, sizeof(char));
-	snprintf(buf, sizeof(char)*bLen, 
+	sprintf(buf, 
 			"\n\t.global %s\n\t.p2align 2,0x0\n%s:\n\t.long %s\n",
 			nameBuf, nameBuf, hexValue);	
 	ret = calloc(strlen(buf)+1, sizeof(char));
@@ -497,10 +497,10 @@ char *getAsmFloat(char *name, char *value) {
 	char *nameBuf = calloc(nbLen, sizeof(char));
 	char *buf;
 	char *ret;
-	snprintf(nameBuf, sizeof(char)*nbLen, "wl_fl_%s", name);
+	sprintf(nameBuf, "wl_fl_%s", name);
 	bLen = strlen(nameBuf)+strlen(hexValue)+100;
 	buf = calloc(bLen, sizeof(char));
-	snprintf(buf, sizeof(char)*bLen, 
+	sprintf(buf, 
 			"\n\t.global %s\n\t.p2align 2,0x0\n%s:\n\t.long %s\n",
 			nameBuf, nameBuf, hexValue);	
 	ret = calloc(strlen(buf)+1, sizeof(char));
@@ -513,7 +513,7 @@ char *getAsmFloat(char *name, char *value) {
 char *getAsmPtr(char *name, char *value) {
 	int len = strlen(name)+strlen(value)+128;
 	char *ret = calloc(len, sizeof(char));
-	snprintf(ret, sizeof(char)*len, "wl_z_%s:\n\t.zero 8\n", name);
+	sprintf(ret, "wl_z_%s:\n\t.zero 8\n", name);
 	return ret;
 }
 
@@ -591,7 +591,7 @@ void convertExternals_Includes(AsmOut *out) {
 		strcpy(curEx, out->parser->externals.externs[i].name);
 		bLen = strlen(curEx)+100;
 		buf = calloc(bLen, sizeof(char));
-		snprintf(buf, sizeof(char)*bLen, "\t.extern %s\n", curEx);
+		sprintf(buf, "\t.extern %s\n", curEx);
 		if(curEx!=NULL) {
 			totalSize+=strlen(buf);
 			out->buffers.externals = 
@@ -666,7 +666,7 @@ void initAsmOut(struct parserData *parser, AsmOut *output) {
 	/*File already exists*/
 	if(output->asmOut!=NULL) {
 		char rm[100];
-		snprintf(rm, sizeof(rm), "rm %s", fileName);
+		sprintf(rm, "rm %s", fileName);
 		system(rm);
 		fclose(output->asmOut);
 	}

@@ -142,7 +142,7 @@ _W_PRIVATE _W_HOT char *intToHex(char *value) {
 	char *res;
 	input = atoi(value);
 	res = calloc(strlen(value)+1024, sizeof(int));
-	snprintf(res, sizeof(res), "0x%x", input);
+	sprintf(res, "0x%x", input);
 	return res;
 }
 
@@ -154,7 +154,7 @@ _W_PRIVATE _W_HOT char *floatToHex(char *value) {
 	convVal = 0;
 	memcpy(&convVal, &input, sizeof(float));
 	res = calloc(strlen(value)+1024, sizeof(int));
-	snprintf(res, sizeof(res), "0x%x", convVal);
+	sprintf(res, "0x%x", convVal);
 	return res;
 }
 
