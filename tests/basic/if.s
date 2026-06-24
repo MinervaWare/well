@@ -148,3 +148,4 @@ wl_str_jgets:
 	.asciz "(i >= 10) pass\n"
 wl_str_jlets:
 	.asciz "(i <= 10) pass\n"
+	.ident "Well: (Mac OS X) 0.0.0"

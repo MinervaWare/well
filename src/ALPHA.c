@@ -30,17 +30,17 @@ void ALPHAGetLVTAlloc(char *buf, size_t bSize, Variable *var) {
 	char *value = var->value;
 	int offset = var->offset;
 	switch(var->type) {
-		case INT: snprintf(buf, bSize,
+		case INT: sprintf(buf,
 						  "\tlda $22, %s($31)\n"
 						  "\tstq $22, %d($23)\n",
 						  value, offset);
 				  break;
-		case CHAR: snprintf(buf, bSize,
+		case CHAR: sprintf(buf,
 						   "\tlda $22, %d($31)\n"
 						   "\tstq $22, %d($23)\n",
 						   (int)value[0], offset);
 				   break;
-		case STRING: snprintf(buf, bSize,
+		case STRING: sprintf(buf,
 							 "\tlda $22, wl_str_%s\n"
 							 "\tstq $22, %d($23)\n",
 							 vName, offset);
@@ -76,23 +76,23 @@ char *getCurrentVarALPHA(struct parserData *parser, Instruction *ins, int argSpo
 	v = getVarFrom(parser, ins->arguments[argSpot]);
 	if(v!=NULL) {
 		switch(v->type) {
-			case STRING: snprintf(asmVName, sizeof(asmVName),
+			case STRING: sprintf(asmVName,
 								 "wl_str_%s", ins->arguments[argSpot]);break;
-			case CHAR: snprintf(asmVName, sizeof(asmVName),
+			case CHAR: sprintf(asmVName,
 							   "wl_ch_%s", ins->arguments[argSpot]);break;
-			case INT: snprintf(asmVName, sizeof(asmVName),
+			case INT: sprintf(asmVName,
 							  "wl_int_%s", ins->arguments[argSpot]);break;
-			case FLOAT: snprintf(asmVName, sizeof(asmVName),
+			case FLOAT: sprintf(asmVName,
 								"wl_fl_%s", ins->arguments[argSpot]);break;
 			case VOID: /*TODO*/break;
-			case PTR: snprintf(asmVName, sizeof(asmVName), 
+			case PTR: sprintf(asmVName, 
 							   "wl_z_%s", ins->arguments[argSpot]);break;
 			case ANY: break;
 		};
 	} else {
 		v = queryLocalVariable(parser, ins->lineNum, ins->arguments[argSpot]);
-		if(v!=NULL) snprintf(asmVName, sizeof(asmVName), "%d($23)", v->offset);
-		else snprintf(asmVName, sizeof(asmVName), "%s", v->value);
+		if(v!=NULL) sprintf(asmVName, "%d($23)", v->offset);
+		else sprintf(asmVName, "%s", v->value);
 	}
 	res = calloc(strlen(asmVName)+1, sizeof(char));
 	strcpy(res, asmVName);
@@ -107,7 +107,7 @@ char *triArgInsRDestALPHA(char *ins, Instruction *wins) {
 	char *buf = calloc(bsize, sizeof(char));
 	char *dest = mapRegisterALPHA(wins->arguments[0]);
 	char *s2 = mapRegisterALPHA(wins->arguments[1]);
-	snprintf(buf, bsize*sizeof(char), "\t%s %s, %s, %s\n", ins, dest, s2, dest);
+	sprintf(buf, "\t%s %s, %s, %s\n", ins, dest, s2, dest);
 	return buf;
 }
 
@@ -127,7 +127,7 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 	/*Special instructions*/
 	/*Inline - Drops direct asm instructions into the output*/
 	if(!strcmp(ins.instruction, "inline")) { 
-		snprintf(outBuf, sizeof(char)*outlen, "\t%s\n", dumpInlineASM(&ins));
+		sprintf(outBuf, "\t%s\n", dumpInlineASM(&ins));
 
 	/*
 	 * 1 argument instructions
@@ -138,7 +138,7 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 		 * */
 		if(!strcmp(ins.instruction, "call")) {
     	    if(ins.argLen>0 && ins.arguments[0]!=NULL)
-    	        snprintf(outBuf, sizeof(char)*outlen, "\tjsr $26, %s\n", ins.arguments[0]);
+    	        sprintf(outBuf, "\tjsr $26, %s\n", ins.arguments[0]);
 		/*
 		 * Return: return~ 0
 		 */
@@ -149,11 +149,11 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 				if(strlen(ins.arguments[0])==0) ins.arguments[0] = "0";
 				else reg = mapRegisterALPHA(ins.arguments[0]);
 				if(checkRegister(ins.arguments[0])) {
-					snprintf(outBuf, sizeof(char)*outlen, 
+					sprintf(outBuf, 
 							"\tldgp $29, 0($26)\n\tbis $31, %s, $1\n\tmov $1, $0\n%s",
 							reg, dealloc);
 				} else {
-					snprintf(outBuf, sizeof(char)*outlen,
+					sprintf(outBuf,
 							"\tldgp $29, 0($26)\n\tbis $31, %s, $1\n\tmov $1, $0\n%s",
 							ins.arguments[0], dealloc);
 				}
@@ -189,18 +189,18 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 				free(var); var = NULL;
 			}
 			if(val1[strlen(val1)-1]==')') {
-				snprintf(outBuf, sizeof(char)*outlen,
+				sprintf(outBuf,
 						"\tldq $22, %s\n"
 						"\tmov $22, %s\n", val1, val2);
 			} else if(val2[strlen(val2)-1]==')') {
-				snprintf(outBuf, sizeof(char)*outlen,
+				sprintf(outBuf,
 						"\tmov $22, %s\n"
 						"\tstq $22, %s\n", val1, val2);	
 			} else if(val1[0]=='$'&&val2[0]=='$') {
-				snprintf(outBuf, sizeof(char)*outlen,
+				sprintf(outBuf,
 						"\tmov %s, %s\n", val2, val1);
 			} else {
-				snprintf(outBuf, sizeof(char)*outlen,
+				sprintf(outBuf,
 						"\tlda %s, %s\n", val2, val1);
 			}
 			if(val1!=NULL) {free(val1);val1=NULL;}
@@ -217,7 +217,7 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 			if(ins.arguments[0]!=NULL&&ins.arguments[1]!=NULL) {
 				char *dest = mapRegisterALPHA(ins.arguments[0]);
 				char *src = mapRegisterALPHA(ins.arguments[1]);
-				snprintf(outBuf, sizeof(char)*outlen, "\tnot %s, %s\n", dest, src);
+				sprintf(outBuf, "\tnot %s, %s\n", dest, src);
 			}
 		}	
 	
@@ -243,9 +243,9 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 					/*If the are the same it's always 1*/
 					/*TODO: I do not believe there is a bitwise or instruction
 					 * for ALPHA: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f98/doc/alpha-guide.pdf*/
-					snprintf(outBuf, sizeof(char)*outlen, "\tor $31, $1, %s\n", dest);
+					sprintf(outBuf, "\tor $31, $1, %s\n", dest);
 				} else {
-					snprintf(outBuf, sizeof(char)*outlen, "\tand %s, %s, %s\n",
+					sprintf(outBuf, "\tand %s, %s, %s\n",
 							s1, s2, dest);
 				} 
 			}
@@ -258,7 +258,7 @@ char *convertInstructionALPHA(AsmOut *out, Instruction ins) {
 		 * */
 		} else if(!strcmp(ins.instruction, "add")) {
 			char *out = triArgInsRDestALPHA("addq", &ins);
-			snprintf(outBuf, sizeof(char)*outlen, "%s", out);
+			sprintf(outBuf, "%s", out);
 			free(out);
 			out = NULL;
 		}

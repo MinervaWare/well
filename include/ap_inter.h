@@ -1,6 +1,12 @@
 /*
+ * Modified by MinervaWare LLC - 4/27/2026
+ * Mold to Wellang inclusion with s390
+ * */
+
+/*
  * C-Ware License
  * 
+ * Copyright (c) 2026, MinervaWare LLC
  * Copyright (c) 2022, C-Ware
  * All rights reserved.
  * 
@@ -78,8 +84,14 @@
 #define OPTION_TYPE_REPEAT 1
 
 /* Internal libraries-- change if resolving duplicate dependencies */
-#include "carray/carray.h"
-#include "liberror/liberror.h"
+#include "osname.h"
+#if OSCLASS == OS_S370
+#	include "carray.h"
+#	include "liberror.h"
+#else 
+#	include "carray/carray.h"
+#	include "liberror/liberror.h"
+#endif
 
 /* Data structure properties */
 #define OPTION_TYPE struct ArgparseOption

@@ -55,25 +55,25 @@ void ARM_MACGetLVAlloc(char *buf, int bSize, Variable *var) {
 	char *value = var->value;
 	int offset = var->offset;
 	switch(var->type) {
-		case INT: snprintf(buf, bSize,
+		case INT: sprintf(buf,
 						  "\tmov x15, %s\n"
 						  "\tstr x15, [sp, #%d]\n",
 						  value, offset+RESERVEDARGOFFSET);
 				  break;
-		case CHAR: snprintf(buf, bSize,
+		case CHAR: sprintf(buf,
 						  "\tmov x15, #%d\n"
 						  "\tstr x15, [sp, #%d]\n",
 						  (int)value[0], offset+RESERVEDARGOFFSET);
 				   break;
 		case STRING: {
 					if(CPU!=ARM_MAC) {
-						snprintf(buf, bSize,
+						sprintf(buf,
 								"\tadrp x15, wl_str_%s\n"
 								"\tadd x15, x15, :lo12:wl_str_%s\n"
 								"\tstr x15, [sp, %d]\n",
 								vName, vName, offset+RESERVEDARGOFFSET);
 					} else {
-						snprintf(buf, bSize,
+						sprintf(buf,
 								"\tadrp x15, wl_str_%s@PAGE\n"
 								"\tadd x15, x15, wl_str_%s@PAGEOFF\n"
 								"\tstr x15, [sp, %d]\n",
@@ -85,13 +85,13 @@ void ARM_MACGetLVAlloc(char *buf, int bSize, Variable *var) {
 		case VOID: break;
 		case PTR: {
 					if(CPU!=ARM_MAC) {
-						snprintf(buf, bSize,
+						sprintf(buf,
 								"\tadrp x15, wl_z_%s\n"
 								"\tadd x15, x15, :lo12:wl_z_%s\n"
 								"\tstr x15, [sp, %d]\n",
 								vName, vName, offset+RESERVEDARGOFFSET);
 					} else {
-						snprintf(buf, bSize,
+						sprintf(buf,
 								"\tadrp x15, wl_z_%s@PAGE\n"
 								"\tadd x15, x15, wl_z_%s@PAGEOFF\n"
 								"\tstr x15, [sp, %d]\n",
@@ -133,14 +133,14 @@ char *mapVarRegister(char *reg, enum varTypes type) {
 		default: rt = 'x'; break;
 	};
 	switch(regNum) {
-		case X0: snprintf(ret, sizeof(ret), "%c0", rt);break;
-		case X1: snprintf(ret, sizeof(ret), "%c1", rt);break;
-		case X2: snprintf(ret, sizeof(ret), "%c2", rt);break;
-		case X3: snprintf(ret, sizeof(ret), "%c3", rt);break;
-		case X4: snprintf(ret, sizeof(ret), "%c4", rt);break;
-		case X5: snprintf(ret, sizeof(ret), "%c5", rt);break;
-		case X6: snprintf(ret, sizeof(ret), "%c6", rt);break;
-		case X7: snprintf(ret, sizeof(ret), "%c7", rt);break;
+		case X0: sprintf(ret, "%c0", rt);break;
+		case X1: sprintf(ret, "%c1", rt);break;
+		case X2: sprintf(ret, "%c2", rt);break;
+		case X3: sprintf(ret, "%c3", rt);break;
+		case X4: sprintf(ret, "%c4", rt);break;
+		case X5: sprintf(ret, "%c5", rt);break;
+		case X6: sprintf(ret, "%c6", rt);break;
+		case X7: sprintf(ret, "%c7", rt);break;
 		case MACARMSP: return "sp";
 	};
 	return ret;
@@ -331,7 +331,7 @@ void insertDefaultMappedArm3Instruction(char *outBuf, int outlen,
 		char *dest = mapRegister(ins->arguments[0]);
 		char *s1 = mapRegister(ins->arguments[1]);
 		char *s2 = mapRegister(ins->arguments[2]);
-		snprintf(outBuf, sizeof(char)*outlen, "\t%s %s, %s, %s\n",
+		sprintf(outBuf, "\t%s %s, %s, %s\n",
 				instruction, dest, s1, s2);
 	}
 }
@@ -345,9 +345,9 @@ void insertDefaultMappedArm3InstructionWithIdempotency(char *outBuf, int outlen,
 		char *s1 = mapRegister(ins->arguments[1]);
 		char *s2 = mapRegister(ins->arguments[2]);
 		if((!strcmp(dest,s1)&&!strcmp(dest,s2))||!strcmp(s1,s2)) {
-			snprintf(outBuf, sizeof(char)*outlen, "\tmov %s, #%d\n", dest, idempotency);
+			sprintf(outBuf, "\tmov %s, #%d\n", dest, idempotency);
 		} else {
-			snprintf(outBuf, sizeof(char)*outlen, "\t%s %s, %s, %s\n",
+			sprintf(outBuf, "\t%s %s, %s, %s\n",
 					instruction, dest, s1, s2);
 		}
 	}
@@ -371,7 +371,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 	/*Special instructions*/
 	/*Inline - Drops direct asm instructions into the output*/
 	if(!strcmp(ins.instruction, "inline")) { 
-		snprintf(outBuf, sizeof(char)*outlen, "\t%s\n", dumpInlineASM(&ins));
+		sprintf(outBuf, "\t%s\n", dumpInlineASM(&ins));
 	
 
 	/*
@@ -383,7 +383,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 		 * NOTE: This is "temporary" until I get if statements and loops going
 		 * */
 		if(!strcmp(ins.instruction, "jump")) {
-			snprintf(outBuf, sizeof(char)*outlen, "\tb _%s\n", ins.arguments[0]);
+			sprintf(outBuf, "\tb _%s\n", ins.arguments[0]);
 		}
 
 	/*
@@ -395,12 +395,12 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 		 * */
 		if(!strcmp(ins.instruction, "call")) {
 			if(ins.argLen>0 && ins.arguments[0]!=NULL) {
-				if(CPU!=ARM_MAC) snprintf(outBuf, sizeof(char)*outlen, "\tbl %s\n", ins.arguments[0]);
+				if(CPU!=ARM_MAC) sprintf(outBuf, "\tbl %s\n", ins.arguments[0]);
 				else if(!doesFunctionExistInternal(out->parser, ins.arguments[0])) {
 					char *init = ARM_MACInitializeExternStackData(
 							getExternalData(out->parser, ins.arguments[0]));
-					snprintf(outBuf, sizeof(char)*outlen, "%s\tbl _%s\n", init, ins.arguments[0]);
-				} else snprintf(outBuf, sizeof(char)*outlen, "\tbl %s\n", ins.arguments[0]);
+					sprintf(outBuf, "%s\tbl _%s\n", init, ins.arguments[0]);
+				} else sprintf(outBuf, "\tbl %s\n", ins.arguments[0]);
 			}
 		/*
 		 * Return
@@ -412,10 +412,10 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 				if(strlen(ins.arguments[0])==0) ins.arguments[0] = "0";
 				else reg = mapRegister(ins.arguments[0]);
 				if(reg!=NULL) {
-					snprintf(outBuf, sizeof(char)*outlen, "\tmov x0, %s\n%s\tret\n",
+					sprintf(outBuf, "\tmov x0, %s\n%s\tret\n",
 							reg, dealloc);
 				} else {
-					snprintf(outBuf, sizeof(char)*outlen, "\tmov x0, #%s\n%s\tret\n",
+					sprintf(outBuf, "\tmov x0, #%s\n%s\tret\n",
 							ins.arguments[0], dealloc);
 				}
 			}
@@ -426,7 +426,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 		  * */
 		} else if(!strcmp(ins.instruction, "sstruct")) {
 			char *reg = mapRegister(ins.arguments[0]);
-			snprintf(outBuf, sizeof(char)*outlen, 
+			sprintf(outBuf, 
 					"\tstr %s, [sp, #8]\n", reg);
 		
 		/*
@@ -435,7 +435,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 		 * */
 		} else if(!strcmp(ins.instruction, "lstruct")) {
 			char *reg = mapRegister(ins.arguments[0]);
-			snprintf(outBuf, sizeof(char)*outlen, "\tldr %s, [sp, #8]\n", reg);
+			sprintf(outBuf, "\tldr %s, [sp, #8]\n", reg);
 		}
 
 	/*
@@ -485,22 +485,22 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 				/*if it is 32-bit(w) we need to extend it back afterwards.*/
 				if(!strcmp(src,dest)) {
 					if(t=='w') {
-						snprintf(outBuf, sizeof(char)*outlen, 
+						sprintf(outBuf, 
 								"\tmvn %c%s, %c%s\n\tsxtw x%s, w%s\n\tstr %s, [sp]\n", 
 								t, src+1, t, src+1, src+1, src+1, src);
 						macRegData->prevRegType = 'x';
 					} else {
-						snprintf(outBuf, sizeof(char)*outlen, "\tmvn %c%s, %c%s\n", 
+						sprintf(outBuf, "\tmvn %c%s, %c%s\n", 
 								t, src+1, t, src+1);
 					}
 				} else {
 					if(t=='w') {
-						snprintf(outBuf, sizeof(char)*outlen, 
+						sprintf(outBuf, 
 								"\tmvn %c%s, %c%s\n\tsxtw x%s, w%s\n\tstr %s, [sp]\n", 
 								t, dest+1, t, src+1, dest+1, dest+1, dest);
 						macRegData->prevRegType = 'x';
 					} else {
-						snprintf(outBuf, sizeof(char)*outlen, "\tmvn %c%s, %c%s\n", 
+						sprintf(outBuf, "\tmvn %c%s, %c%s\n", 
 								t, dest+1, t, src+1);
 					}
 				}
@@ -522,7 +522,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 		 * */
 		if(getIfStateCmpARM_MAC(ins.instruction)!=NULL) {
 			char *conv = ifStateConvertARM_MAC(out, &ins);
-			snprintf(outBuf, sizeof(char)*outlen, "%s", conv);
+			sprintf(outBuf, "%s", conv);
 			free(conv); conv = NULL;
 		
 		/* AND: and~ r1, r2, r3
@@ -549,9 +549,9 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 				char *s1 = mapRegister(ins.arguments[1]);
 				char *s2 = mapRegister(ins.arguments[2]);
 				if((!strcmp(dest,s1)&&!strcmp(dest,s2))||!strcmp(s1,s2)) {
-					snprintf(outBuf, sizeof(char)*outlen, "\tmov %s, #0\n", dest);
+					sprintf(outBuf, "\tmov %s, #0\n", dest);
 				} else {
-					snprintf(outBuf, sizeof(char)*outlen, "\torr %s, %s, %s\n\tmvn %s, %s\n",
+					sprintf(outBuf, "\torr %s, %s, %s\n\tmvn %s, %s\n",
 							dest, s1, s2, dest, dest);
 				}
 			}
@@ -566,9 +566,9 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 				char *s1 = mapRegister(ins.arguments[1]);
 				char *s2 = mapRegister(ins.arguments[2]);
 				if((!strcmp(dest,s1)&&!strcmp(dest,s2))||!strcmp(s1,s2)) {
-					snprintf(outBuf, sizeof(char)*outlen, "\tmov %s, #0\n", dest);
+					sprintf(outBuf, "\tmov %s, #0\n", dest);
 				} else {
-					snprintf(outBuf, sizeof(char)*outlen, "\tand %s, %s, %s\n\tmvn %s, %s\n",
+					sprintf(outBuf, "\tand %s, %s, %s\n\tmvn %s, %s\n",
 							dest, s1, s2, dest, dest);
 				}
 			}
@@ -615,7 +615,7 @@ char *convertInstructionARM_MAC(AsmOut *out, Instruction ins) {
 				char *dest = mapRegister(ins.arguments[0]);
 				char *s1 = mapRegister(ins.arguments[1]);
 				char *s2 = mapRegister(ins.arguments[2]);
-				snprintf(outBuf, sizeof(char)*outlen, 
+				sprintf(outBuf, 
 						"\tsdiv %s, %s, %s\n\tmul %s, %s, %s\n\tsub %s, %s, %s\n",
 						dest, s1, s2, dest, dest, dest, dest, s2, dest);
 			}
