@@ -29,13 +29,17 @@ This is the list of actively maintained architectures for Wellang. This does not
 * [x] I386
 * [x] ARM_MAC (aarch64 - ARMv8)
 * [ ] ARMv7 (aarch32)
-* [ ] RISC-V
+* [x] RV64 (RISC-V 64-bit generic)
+* [ ] RV32 (RISC-V 32-bit generic)
 * [ ] ITANIUM_64
 * [x] POWERPC (ppc64, tested with the Cell Power4) 
 * [ ] RS6000 (POWER)
 * [ ] SPARC
-* [ ] SZ_IBM (s390 31-bit Z/VM 4.4)
-* [x] MIPS (mips32r2el)
+* [ ] S390 (s390 Z/VM 4.4)
+* [ ] S390X
+* [ ] IBM_Z
+* [x] MIPS32 (mips32r2el)
+* [ ] MIPS64
 * [ ] HPPA
 
 ### NEED HELP?

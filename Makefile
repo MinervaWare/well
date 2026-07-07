@@ -1,9 +1,9 @@
 CC?= gcc
 # -fsanitize=address
-CFLAGS?= -g -O2 -std=c89 -pedantic-errors -Wdeclaration-after-statement -Wvla -Iinclude -Wall -Wframe-larger-than=2048  -Wno-implicit-function-declaration -Wno-unused-variable -Wno-unused-result -Wno-strict-prototypes 
+CFLAGS+= -g -O2 -std=c89 -pedantic-errors -Wdeclaration-after-statement -Wvla -Iinclude -Wall -Wframe-larger-than=2048  -Wno-implicit-function-declaration -Wno-unused-variable -Wno-unused-result -Wno-strict-prototypes 
 CFLAGS_REL= -O2 -std=c89 -Iinclude -fomit-frame-pointer -fconserve-stack -Wall -Wframe-larger-than=2048  -Wno-implicit-function-declaration -Wno-unused-variable -Wno-unused-result
 
-LDFLAGS= -lm
+LDFLAGS= -lm -no-pie
 
 SRCS:= $(wildcard src/*.c) \
 	   $(wildcard include/*.c)

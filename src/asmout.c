@@ -9,6 +9,7 @@
 #include "ARM_MAC.h"
 #include "AMDX8664.h"
 #include "MIPS32.h"
+#include "RV64.h"
 
 /*
  * Register conversion
@@ -72,24 +73,8 @@ char *dumpInlineASM(Instruction *ins) {
 
 char *getCPUMain() {
 	wString ret = wInitString(10);
-	/*I know this is redundant,
-	 * I still need to go through different compilers and sort the entry per compiler/OS, not CPU.*/
-	switch(CPU) {
-		case ARMv8: wAssign(&ret, "main"); break;
-		case ARM_MAC: wAssign(&ret, "_main"); break;
-		case AMD_X86_64: wAssign(&ret, "main"); break;
-		case I386: wAssign(&ret, "main"); break; 
-		case ALPHA: wAssign(&ret, "main"); break; 
-		case ITANIUM_64: wAssign(&ret, "main"); break; 
-		case ARMv7: wAssign(&ret, "main"); break;
-		case POWERPC: wAssign(&ret, "main"); break;
-		case RS6000: wAssign(&ret, "main"); break;
-		case SZ_IBM: wAssign(&ret, "main"); break;
-		case SPARC: wAssign(&ret, "main"); break;
-		case MIPS: wAssign(&ret, "main"); break;
-		case HPPA: wAssign(&ret, "main"); break;
-		case SPU: wAssign(&ret, "main"); break;
-	}
+	if(!strcmp(OSNAME, "Mac OS X")) wAssign(&ret, "_main");
+	else wAssign(&ret, "main");
 	return ret.data;
 }
 
@@ -111,13 +96,11 @@ char *createFunctionHeader(char *name) {
 		case I386: wCAppend(&head,
 					wCFmt("\t.text\n\t.global %s\n%s:\n", name, name).data);
 					break;				
-		case ITANIUM_64: break; /*TODO*/
 		case ARMv8:
 		case ARM_MAC: wCAppend(&head,
-                                           wCFmt("\t.global %s\n\t.p2align 2\n%s:\n",
-                                           name, name).data);
+                      		wCFmt("\t.global %s\n\t.p2align 2\n%s:\n",
+                      		name, name).data);
 			      break;
-		case ARMv7: break; /*TODO*/
 		case POWERPC: wCAppend(&head, 
 					      	wCFmt("\t.section\t\".opd\",\"aw\"\n"
 						"\t.global %s\n\t.align 3\n%s:"
@@ -125,19 +108,19 @@ char *createFunctionHeader(char *name) {
 						"\t.section\t\".text\"\n.wl_%s:\n",
 						name, name, name, name).data); 
 			      break;
-		case RS6000: break; /*TODO*/
-		case SZ_IBM: break; /*TODO*/
-		case SPARC: break; /*TODO*/
 		case MIPS: {
 			   wCAppend(&head, 
-				   wCFmt("\t.text\n\t.align 2\n\t.global %s\n\n", name).data);
+			   		wCFmt("\t.text\n\t.align 2\n\t.global %s\n\n", name).data);
 			   wCAppend(&head, "\t.set nomips16\n\t.set nomicromips\n");
 			   wCAppend(&head, wCFmt("\t.ent %s\n", name).data);
 			   wCAppend(&head, wCFmt("%s:\n", name).data);
 			   break; 
 		}
-		case HPPA: break; /*TODO*/
-		case SPU: break; /*TODO*/
+		case RV64: {
+			wCAppend(&head, wCFmt("\t.align 1\n\t.global %s\n%s:\n", 
+					name, name).data);
+		}
+		default: break;
 	};
 	if(isEntryPoint(name)) {
 		if(CPU==ALPHA) wCAppend(&head, "\tldgp $29, 0($27)\n");
@@ -172,17 +155,10 @@ char *getLVTAllocation(Function *func) {
 				case ALPHA: ALPHAGetLVTAlloc(buf, sizeof(char)*bSize,
 									&func->lvt->variables[i]);
 							break; 
-				case ITANIUM_64: break; /*TODO*/
-				case ARMv7: break; /*TODO*/
 				case POWERPC: PPCGetLVTAlloc(buf, sizeof(char)*bSize,
 							      &func->lvt->variables[i]);
 					      break;
-				case RS6000: break; /*TODO*/
-				case SZ_IBM: break; /*TODO*/
-				case SPARC: break; /*TODO*/
-				case MIPS: break; /*TODO*/
-				case HPPA: break; /*TODO*/
-				case SPU: break; /*TODO*/
+				default: break;
 			};
 			if(res==NULL) {
 				res = calloc(strlen(buf)+1, sizeof(char));
@@ -233,22 +209,16 @@ char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 							asmInstruction = 
 								convertInstructionAMD_X86_64(out, *curIns);
 							break;
-				case ITANIUM_64: break; /*TODO*/
 				case ARMv8:
 				case ARM_MAC: 
 							asmInstruction = 
 								convertInstructionARM_MAC(out, *curIns);
 							break;
-				case ARMv7: break; /*TODO*/
 				case POWERPC: asmInstruction =
 					      	convertInstructionPPC(out, *curIns); break;
-				case RS6000: break; /*TODO*/
-				case SZ_IBM: break; /*TODO*/
-				case SPARC: break; /*TODO*/
 				case MIPS: asmInstruction = convertInstructionMIPS32(out, *curIns); 
 					   break; 
-				case HPPA: break; /*TODO*/
-				case SPU: break; /*TODO*/
+				default: break;
 			};
 			if(asmInstruction!=NULL) {
 				bufferSize += strlen(asmInstruction)+1;	
@@ -285,17 +255,12 @@ char *getStackAllocation() {
 		case ALPHA: return stackAllocateALPHA(CPU);
 		case I386:
 		case AMD_X86_64: return stackAllocateAMD_X86_64(CPU);
-		case ITANIUM_64: break; /*TODO*/
 		case ARMv8:
 		case ARM_MAC: return stackAllocateARM_MAC(CPU);
-		case ARMv7: break; /*TODO*/
 		case POWERPC: return stackAllocatePPC(CPU);
-		case RS6000: break; /*TODO*/
-		case SZ_IBM: break; /*TODO*/
-		case SPARC: break; /*TODO*/
 		case MIPS: return stackAllocateMIPS32(CPU);
-		case HPPA: break; /*TODO*/
-		case SPU: break; /*TODO*/
+		case RV64: return stackAllocateRV64(CPU);
+		default: break;
 	};
 	return NULL;
 }
@@ -332,22 +297,18 @@ void convertFunctions(AsmOut *out) {
 				case AMD_X86_64:							
 							asmInstruction = convertInstructionAMD_X86_64(out, *curIns);
 							break;
-				case ITANIUM_64: break; /*TODO*/
 				case ARMv8:
 				case ARM_MAC: 
 							asmInstruction = convertInstructionARM_MAC(out, *curIns);
 							break;
-				case ARMv7: break; /*TODO*/
 				case POWERPC: 
 					    		asmInstruction = convertInstructionPPC(out, *curIns);
 							break;
-				case RS6000: break; /*TODO*/
-				case SZ_IBM: break; /*TODO*/
-				case SPARC: break; /*TODO*/
 				case MIPS: asmInstruction = convertInstructionMIPS32(out, *curIns); 
 					   break;
-				case HPPA: break; /*TODO*/
-				case SPU: break; /*TODO*/
+				case RV64: asmInstruction = convertInstructionRV64(out, *curIns);
+						break;
+				default: break;
 			};
 			if(asmInstruction!=NULL&&strcmp(asmInstruction, "")) {
 				bufferSize+=strlen(asmInstruction)+
@@ -380,18 +341,13 @@ void convertFunctions(AsmOut *out) {
 				case ALPHA: deallocateStack = stackDeallocateALPHA();break;
 				case AMD_X86_64: 
 				case I386: deallocateStack = stackDeallocateAMD_X86_64();break;
-				case ITANIUM_64: break; /*TODO*/
 				case ARMv8:
 				case ARM_MAC: deallocateStack = stackDeallocateARM_MAC();break;
-				case ARMv7: break; /*TODO*/
 				case POWERPC: deallocateStack = stackDeallocatePPC();break;
-				case RS6000: break; /*TODO*/
-				case SZ_IBM: break; /*TODO*/
-				case SPARC: break; /*TODO*/
 				case MIPS: deallocateStack = 
 					   stackDeallocateMIPS32(out->parser->functions[i].funName);break;
-				case HPPA: break; /*TODO*/
-				case SPU: break; /*TODO*/
+				case RV64: deallocateStack = stackDeallocateRV64();break;
+				default: break;
 			};
 			if(CPU!=POWERPC) {
 				if(deallocateStack!=NULL) strcat(deallocateStack, "\tret\n");
@@ -436,14 +392,11 @@ char *getAsmString(char *name, char *value) {
 		case ALPHA: /*Same as ARM_MAC*/
 		case POWERPC: /*Same as ARM_MAC*/
 		case ARM_MAC: res = wCFmt("wl_str_%s:\n\t.asciz %s\n", name, value);break;
-		case ARMv7: break; /*TODO*/
-		case RS6000: break; /*TODO*/
-		case SZ_IBM: break; /*TODO*/
-		case SPARC: break; /*TODO*/
 		case MIPS: res = wCFmt("\t.rdata\n\t.align 2\nwl_str_%s:\n"
 					   "\t.asciz %s\n", name, value);break; 
-		case HPPA: break; /*TODO*/
-		case SPU: break; /*TODO*/
+		case RV64: res = wCFmt("\n\t.align 3\nwl_str_%s:\n\t.string %s\n",
+								name, value);break;
+		default: break;
 	};
 	return res.data;
 }

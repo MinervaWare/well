@@ -1,16 +1,20 @@
-	.global _main
-	.p2align 2
-_main:
-	sub sp, sp, #80
-	stp x29, x30, [sp, #64]
-	add x29, sp, #64
-	adrp x0,wl_str_text@PAGE
-	add x0, x0, wl_str_text@PAGEOFF
-	bl _printf
-	mov x0, x0
-	ldp x29, x30, [sp, #64]
-	add sp, sp, #80
-	ret
+	.align 1
+	.global main
+main:
+	addi sp,sp,-32
+	sd ra,24(sp)
+	sd s0,16(sp)
+	addi s0,sp,32
+	lla a0,wl_str_text
+	call printf@plt
+	mv a6,a0
+	mv a0,a0
+	ld ra,24(sp)
+	ld s0,16(sp)
+	addi sp,sp,32
+	jr ra
+
+	.align 3
 wl_str_text:
-	.asciz "Hello World!\n"
-	.ident "Well: (Mac OS X) 0.0.0"
+	.string "Hello World!\n"
+	.ident "Well: (GNU/Linux) 0.0.0"
