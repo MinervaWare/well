@@ -158,6 +158,9 @@ char *getLVTAllocation(Function *func) {
 				case POWERPC: PPCGetLVTAlloc(buf, sizeof(char)*bSize,
 							      &func->lvt->variables[i]);
 					      break;
+				case RV64: free(buf);
+						   buf = RV64GetLVAlloc(&func->lvt->variables[i]);
+						   break;
 				default: break;
 			};
 			if(res==NULL) {
@@ -218,6 +221,8 @@ char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 					      	convertInstructionPPC(out, *curIns); break;
 				case MIPS: asmInstruction = convertInstructionMIPS32(out, *curIns); 
 					   break; 
+				case RV64: asmInstruction = convertInstructionRV64(out, *curIns);
+						   break;
 				default: break;
 			};
 			if(asmInstruction!=NULL) {
@@ -241,6 +246,9 @@ char *convertFunctionSubScopes(AsmOut *out, Function *func) {
 			case POWERPC: sprintf(ret,
 						      "\tbl .%s_cont\n",
 						      func->subScopes[i].scope.scopeName);
+			case RV64: sprintf(ret, "\tjal .%s_cont\n",
+					   		func->subScopes[i].scope.scopeName);
+					   break;
 			default: break;
 		};
 		res = (char *)realloc(res, sizeof(char)*bufferSize);

@@ -1,151 +1,153 @@
 	.extern printf
+	.align 1
 	.global jeT
-	.p2align 2
 jeT:
-	sub sp, sp, #80
-	stp x29, x30, [sp, #64]
-	add x29, sp, #64
-	adrp x15, wl_str_jets@PAGE
-	add x15, x15, wl_str_jets@PAGEOFF
-	str x15, [sp, 39]
-	mov x15, 10
-	str x15, [sp, #47]
-	ldr x15, [sp, #47]
-	cmp x15, #10
-	beq .wl_jeT_is_09
+	addi sp,sp,-48
+	sd ra,40(sp)
+	sd s0,32(sp)
+	addi s0,sp,48
+	lla t0,wl_str_jets
+	sd t0,-28(s0)
+	li t0,10
+	sw t0,-36(s0)
+	lw t0,-36(s0)
+	li t1,10
+	bne t0,t1,.wl_jeT_is_09_cont
+	jal .wl_jeT_is_09
 .wl_jeT_is_09_cont:
-	ldp x29, x30, [sp, #64]
-	add sp, sp, #80
+	ld ra,40(sp)
+	ld s0,32(sp)
+	addi sp,sp,48
+	jr ra
 	ret
 .wl_jeT_is_09:
-	ldr x0, [sp, #39]
-	ldr x1, [sp, #47]
-	str x1, [sp, #0]
-	str x2, [sp, #8]
-	str x3, [sp, #16]
-	str x4, [sp, #24]
-	str x5, [sp, #32]
-	str x6, [sp, #40]
-	bl _printf
-	b .wl_jeT_is_09_cont
+	ld a0,-28(s0)
+	addi a1,s0,-36
+	call printf@plt
+	mv a6,a0
+	jal .wl_jeT_is_09_cont
+	.align 1
 	.global jneT
-	.p2align 2
 jneT:
-	sub sp, sp, #80
-	stp x29, x30, [sp, #64]
-	add x29, sp, #64
-	adrp x15, wl_str_jnets@PAGE
-	add x15, x15, wl_str_jnets@PAGEOFF
-	str x15, [sp, 39]
-	mov x15, 5
-	str x15, [sp, #47]
-	ldr x15, [sp, #47]
-	cmp x15, #10
-	bne .wl_jneT_is_019
+	addi sp,sp,-48
+	sd ra,40(sp)
+	sd s0,32(sp)
+	addi s0,sp,48
+	lla t0,wl_str_jnets
+	sd t0,-28(s0)
+	li t0,5
+	sw t0,-36(s0)
+	lw t0,-36(s0)
+	li t1,10
+	beq t0,t1,.wl_jneT_is_019_cont
+	jal .wl_jneT_is_019
 .wl_jneT_is_019_cont:
-	ldp x29, x30, [sp, #64]
-	add sp, sp, #80
+	ld ra,40(sp)
+	ld s0,32(sp)
+	addi sp,sp,48
+	jr ra
 	ret
 .wl_jneT_is_019:
-	ldr x0, [sp, #39]
-	ldr x1, [sp, #47]
-	str x1, [sp, #0]
-	str x2, [sp, #8]
-	str x3, [sp, #16]
-	str x4, [sp, #24]
-	str x5, [sp, #32]
-	str x6, [sp, #40]
-	bl _printf
-	b .wl_jneT_is_019_cont
+	ld a0,-28(s0)
+	addi a1,s0,-36
+	call printf@plt
+	mv a6,a0
+	jal .wl_jneT_is_019_cont
+	.align 1
 	.global jgeT
-	.p2align 2
 jgeT:
-	sub sp, sp, #80
-	stp x29, x30, [sp, #64]
-	add x29, sp, #64
-	adrp x15, wl_str_jgets@PAGE
-	add x15, x15, wl_str_jgets@PAGEOFF
-	str x15, [sp, 39]
-	mov x15, 11
-	str x15, [sp, #47]
-	ldr x15, [sp, #47]
-	cmp x15, #10
-	bge .wl_jgeT_is_029
+	addi sp,sp,-48
+	sd ra,40(sp)
+	sd s0,32(sp)
+	addi s0,sp,48
+	lla t0,wl_str_jgets
+	sd t0,-28(s0)
+	li t0,11
+	sw t0,-36(s0)
+	lw t0,-36(s0)
+	li t1,10
+	ble t0,t1,.wl_jgeT_is_029_cont
+	jal .wl_jgeT_is_029
 .wl_jgeT_is_029_cont:
-	ldp x29, x30, [sp, #64]
-	add sp, sp, #80
+	ld ra,40(sp)
+	ld s0,32(sp)
+	addi sp,sp,48
+	jr ra
 	ret
 .wl_jgeT_is_029:
-	ldr x0, [sp, #39]
-	ldr x1, [sp, #47]
-	str x1, [sp, #0]
-	str x2, [sp, #8]
-	str x3, [sp, #16]
-	str x4, [sp, #24]
-	str x5, [sp, #32]
-	str x6, [sp, #40]
-	bl _printf
-	b .wl_jgeT_is_029_cont
+	ld a0,-28(s0)
+	addi a1,s0,-36
+	call printf@plt
+	mv a6,a0
+	jal .wl_jgeT_is_029_cont
+	.align 1
 	.global jleT
-	.p2align 2
 jleT:
-	sub sp, sp, #80
-	stp x29, x30, [sp, #64]
-	add x29, sp, #64
-	adrp x15, wl_str_jlets@PAGE
-	add x15, x15, wl_str_jlets@PAGEOFF
-	str x15, [sp, 39]
-	mov x15, 9
-	str x15, [sp, #47]
-	ldr x15, [sp, #47]
-	cmp x15, #10
-	ble .wl_jleT_is_039
+	addi sp,sp,-48
+	sd ra,40(sp)
+	sd s0,32(sp)
+	addi s0,sp,48
+	lla t0,wl_str_jlets
+	sd t0,-28(s0)
+	li t0,9
+	sw t0,-36(s0)
+	lw t0,-36(s0)
+	li t1,10
+	bge t0,t1,.wl_jleT_is_039_cont
+	jal .wl_jleT_is_039
 .wl_jleT_is_039_cont:
-	ldp x29, x30, [sp, #64]
-	add sp, sp, #80
+	ld ra,40(sp)
+	ld s0,32(sp)
+	addi sp,sp,48
+	jr ra
 	ret
 .wl_jleT_is_039:
-	ldr x0, [sp, #39]
-	ldr x1, [sp, #47]
-	str x1, [sp, #0]
-	str x2, [sp, #8]
-	str x3, [sp, #16]
-	str x4, [sp, #24]
-	str x5, [sp, #32]
-	str x6, [sp, #40]
-	bl _printf
-	b .wl_jleT_is_039_cont
-	.global _main
-	.p2align 2
-_main:
-	sub sp, sp, #80
-	stp x29, x30, [sp, #64]
-	add x29, sp, #64
-	adrp x0,wl_str_iftest@PAGE
-	add x0, x0, wl_str_iftest@PAGEOFF
-	str x1, [sp, #0]
-	str x2, [sp, #8]
-	str x3, [sp, #16]
-	str x4, [sp, #24]
-	str x5, [sp, #32]
-	str x6, [sp, #40]
-	bl _printf
-	bl jeT
-	bl jneT
-	bl jgeT
-	bl jleT
-	mov x0, x0
-	ldp x29, x30, [sp, #64]
-	add sp, sp, #80
-	ret
+	ld a0,-28(s0)
+	addi a1,s0,-36
+	call printf@plt
+	mv a6,a0
+	jal .wl_jleT_is_039_cont
+	.align 1
+	.global main
+main:
+	addi sp,sp,-48
+	sd ra,40(sp)
+	sd s0,32(sp)
+	addi s0,sp,48
+	lla a0,wl_str_iftest
+	call printf@plt
+	mv a6,a0
+	call jeT
+	mv a6,a0
+	call jneT
+	mv a6,a0
+	call jgeT
+	mv a6,a0
+	call jleT
+	mv a6,a0
+	mv a0,a0
+	ld ra,40(sp)
+	ld s0,32(sp)
+	addi sp,sp,48
+	jr ra
+
+	.align 3
 wl_str_iftest:
-	.asciz "- - - If Statement Operator Tests - - -\n"
+	.string "- - - If Statement Operator Tests - - -\n"
+
+	.align 3
 wl_str_jets:
-	.asciz "(i == 10) pass\n"
+	.string "(i == 10) pass\n"
+
+	.align 3
 wl_str_jnets:
-	.asciz "(i != 10) pass\n"
+	.string "(i != 10) pass\n"
+
+	.align 3
 wl_str_jgets:
-	.asciz "(i >= 10) pass\n"
+	.string "(i >= 10) pass\n"
+
+	.align 3
 wl_str_jlets:
-	.asciz "(i <= 10) pass\n"
-	.ident "Well: (Mac OS X) 0.0.0"
+	.string "(i <= 10) pass\n"
+	.ident "Well: (GNU/Linux) 0.0.0"

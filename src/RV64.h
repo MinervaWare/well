@@ -28,7 +28,7 @@ enum registersRV64 {
 
 char *stackAllocateRV64(enum cpuType cpu);
 char *stackDeallocateRV64();
-char *RV64GetLVAlloc(char *buf, size_t bSize, Variable *var);
+char *RV64GetLVAlloc(Variable *var);
 char *convertInstructionRV64(AsmOut *out, Instruction ins);
 
 #endif
